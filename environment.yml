@@ -1,0 +1,6 @@
+name: evolite
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+prefix: /Users/frogjj/miniforge3/envs/evolite
