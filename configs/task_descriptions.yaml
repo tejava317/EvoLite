@@ -1,0 +1,21 @@
+# configs/task_descriptions.yaml
+# task descriptions for each dataset D
+
+LiveCodeBench:
+  description: |
+    The code generation task in LiveCodeBench involves generating correct and functional code
+    from a natural language problem description, where the model is evaluated based on its ability
+    to pass a set of unseen test cases.
+
+HumanEval:
+  description: |
+    The HumanEval dataset, developed by OpenAI, comprises 164 handcrafted programming problems,
+    each including a function signature, docstring, body, and multiple unit tests,
+    designed to evaluate the code generation capabilities of large language models
+    by assessing their ability to generate functionally correct code from docstrings.
+
+MBPP:
+  description: |
+    The MBPP (Mostly Basic Python Problems) dataset comprises approximately 1,000 crowd-sourced Python programming problems,
+    each including a task description, code solution, and three automated test cases,
+    designed to be solvable by entry-level programmers and covering programming fundamentals and standard library functionality.
