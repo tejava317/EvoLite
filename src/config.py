@@ -16,7 +16,6 @@ if not OPENAI_API_KEY:
 # if not ANTROPIC_API_KEY:
 #     raise ValueError("Anthropic API key is not set in the .env file.")
 
-# Project paths
 PROJECT_ROOT = Path(__file__).parent.parent
 DEFAULT_PROMPTS_PATH = PROJECT_ROOT / "configs" / "default_prompts.yaml"
 
@@ -33,3 +32,19 @@ def load_default_prompts():
     return prompts
 
 DEFAULT_PROMPTS = load_default_prompts()
+
+TASK_DESCRIPTIONS_PATH = PROJECT_ROOT / "configs" / "task_descriptions.yaml"
+
+def load_task_descriptions():
+    """
+    Load task descriptions from YAML configuration file
+    """
+    if not TASK_DESCRIPTIONS_PATH.exists():
+        raise FileNotFoundError(f"Task descriptions file not found: {TASK_DESCRIPTIONS_PATH}")
+    
+    with open(TASK_DESCRIPTIONS_PATH, 'r', encoding='utf-8') as f:
+        task_descriptions = yaml.safe_load(f)
+    
+    return task_descriptions
+
+TASK_DESCRIPTIONS = load_task_descriptions()

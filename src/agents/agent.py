@@ -23,12 +23,6 @@ class Agent:
         self.response_tokens = None
         self.total_tokens = None
     
-    def __str__(self):
-        return self.role
-    
-    def copy(self):
-        return Agent(self.role, self.prompt, self.workflow_description, self.agent_client)
-    
     def initialize_prompt(self):
         """
         Generate a prompt for the agent by using the default generation prompt
@@ -70,6 +64,12 @@ class Agent:
         self.response_tokens = response['response_tokens']
         self.total_tokens = response['total_tokens']
         return response
+    
+    def __str__(self):
+        return self.role
+    
+    def copy(self):
+        return Agent(self.role, self.prompt, self.workflow_description, self.agent_client)
 
 if __name__ == "__main__":
     role = "Code Generation Agent"
