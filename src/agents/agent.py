@@ -1,21 +1,21 @@
 # src/agents/agent.py
 from src.config import DEFAULT_PROMPTS
-from src.llm.client import LLMClient
+from src.llm.client import PromptGenerator, AgentClient
 
 class Agent:
     def __init__(self,
-                 task: str,
+                 role: str,
                  prompt: str = None,
-                 llm_client: LLMClient = None):
-        self.task = task
+                 workflow_description: str = None,
+                 agent_client: AgentClient = None):
+        self.role = role
 
-        # LLM client initialization
-        self.llm_client = llm_client if llm_client is not None else LLMClient()
+        # agent client initialization
+        self.agent_client = agent_client if agent_client is not None else AgentClient()
 
         # prompt initialization
-        self.prompt = prompt
-        if self.prompt is None:
-            self.prompt = self.initialize_prompt()
+        self.workflow_description = workflow_description
+        self.prompt = prompt if prompt is not None else self.initialize_prompt()
         
         # evaluation
         self.response = None
@@ -24,21 +24,31 @@ class Agent:
         self.total_tokens = None
     
     def __str__(self):
-        return self.task
+        return self.role
     
     def copy(self):
-        return Agent(self.task, self.prompt, self.llm_client)
+        return Agent(self.role, self.prompt, self.workflow_description, self.agent_client)
     
     def initialize_prompt(self):
         """
-        Generate a prompt for the task by using the default generation prompt
+        Generate a prompt for the agent by using the default generation prompt
         """
         default_prompt = DEFAULT_PROMPTS.get('DefaultAgentGenerationPrompt', {}).get('prompt', '')
         
         if not default_prompt:
             raise ValueError("DefaultAgentGenerationPrompt not found in configuration")
         
-        return default_prompt
+        if self.workflow_description:
+            default_prompt = default_prompt.replace('[Workflow description]', self.workflow_description)
+        
+        agent_description = f"The agent's role is {self.role}. You will generate a prompt for the agent based on the role."
+
+        prompt_generator = PromptGenerator()
+        prompt = prompt_generator.generate_prompt(
+            default_prompt=default_prompt,
+            description=agent_description
+        )
+        return prompt
     
     def update_prompt(self, prompt: str):
         self.prompt = prompt
@@ -52,7 +62,7 @@ class Agent:
         """
         Run the agent with the given input data
         """
-        response = self.llm_client.generate(system_prompt=self.prompt, user_content=input_data)
+        response = self.agent_client.generate_response(prompt=self.prompt, input_data=input_data)
 
         # update evaluation
         self.response = response['content']
@@ -62,9 +72,28 @@ class Agent:
         return response
 
 if __name__ == "__main__":
-    agent = Agent(task='Code Generation Agent')
-    print(agent.prompt)
-
+    role = "Code Generation Agent"
+    workflow_description = "Task Parsing Agent -> Code Generation Agent -> Code Reviewer Agent"
     input_data = "Write a Python function that calculates the factorial of a number."
+
+    print("======= Agent Testing =======\n")
+
+    print("Initializing agent...")
+    print(f"\nRole: {role}")
+    print(f"Workflow description: {workflow_description}")
+
+    agent = Agent(role=role, workflow_description=workflow_description)
+
+    print("\nPrompt:")
+    print(agent.prompt)
+    print("\nInput data:")
+    print(input_data)
+    print("\nRunning agent...")
+
     response = agent.run(input_data)
-    print(response)
+
+    print("\nResponse:")
+    print(response['content'])
+    print(f"\nPrompt tokens: {response['prompt_tokens']}")
+    print(f"Response tokens: {response['response_tokens']}")
+    print(f"Total tokens: {response['total_tokens']}")
