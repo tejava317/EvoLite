@@ -63,23 +63,39 @@ class Workflow:
         self._build_graph()
     
     # Insert an agent at the specific poistion.
-    def insert_agent(self, agent: Agent, position: int):
+    # Aware that the new agent's role becomes an argument for an ease of implementation.
+    def insert_agent(self, role: str, position: int):
         
         if position < 0 or position > len(self.agents):
-            raise IndexError("Position out of range")
+            raise IndexError("Position out of range while inserting.")
         
-        self.agents.insert(position, agent)
+        # Generate an agent and insert at the position.
+        workflow_description = self.agents[0].workflow_description if len(self.agents) else ""
+        self.agents.insert(position, Agent(role=role, workflow_description=workflow_description))
+        
+        # Build a graph.
         self._build_graph()
-        print(f"Inserted agent '{agent.role}' at position {position}.")
+
+        # Update the task description.
+        new_task_description = " -> ".join(agent.role for agent in self.agents)
+        for agent in self.agents:
+            agent.task_description = new_task_description
 
     # Remove an agent at the specific position.
     def remove_agent(self, position: int):
 
+        # Remove an agent.
         if position < 0 or position >= len(self.agents):
-            raise IndexError("Position out of range")
+            raise IndexError("Position out of range while removing.")
         removed = self.agents.pop(position)
+        
+        # Build a graph.
         self._build_graph()
-        print(f"Removed agent '{removed.role}' from position {position}.")
+
+        # Update the task description.
+        new_task_description = " -> ".join(agent.role for agent in self.agents)
+        for agent in self.agents:
+            agent.task_description = new_task_description
 
 
     def _create_agent_node(self, agent: Agent, agent_idx: int):

@@ -37,11 +37,17 @@ class Agent:
         
         agent_description = f"The agent's role is {self.role}. You will generate a prompt for the agent based on the role."
 
-        prompt_generator = PromptGenerator()
-        prompt = prompt_generator.generate_prompt(
-            default_prompt=default_prompt,
-            description=agent_description
-        )
+        # Try-catch for initializing prompt.
+        try: 
+            prompt_generator = PromptGenerator()
+            prompt = prompt_generator.generate_prompt(
+                default_prompt=default_prompt,
+                description=agent_description
+            )
+        except Exception as e:
+            # print(f"Exception occurred: {e}")
+            prompt = default_prompt
+        
         return prompt
     
     def update_prompt(self, prompt: str):
