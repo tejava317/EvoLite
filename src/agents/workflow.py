@@ -23,6 +23,7 @@ class Workflow:
         
         # workflow initialization
         self.agents = agents if agents is not None else []
+        self.memory = {}
 
         self.workflow_graph = None
         self.compiled_graph = None
@@ -61,6 +62,26 @@ class Workflow:
         self.agents.append(agent)
         self._build_graph()
     
+    # Insert an agent at the specific poistion.
+    def insert_agent(self, agent: Agent, position: int):
+        
+        if position < 0 or position > len(self.agents):
+            raise IndexError("Position out of range")
+        
+        self.agents.insert(position, agent)
+        self._build_graph()
+        print(f"Inserted agent '{agent.role}' at position {position}.")
+
+    # Remove an agent at the specific position.
+    def remove_agent(self, position: int):
+
+        if position < 0 or position >= len(self.agents):
+            raise IndexError("Position out of range")
+        removed = self.agents.pop(position)
+        self._build_graph()
+        print(f"Removed agent '{removed.role}' from position {position}.")
+
+
     def _create_agent_node(self, agent: Agent, agent_idx: int):
         def agent_node(state: WorkflowState) -> WorkflowState:
             input_data = state["current_output"] if state.get("current_output") else state["input"]
