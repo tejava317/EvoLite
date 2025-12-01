@@ -65,6 +65,7 @@ dependencies:
   - zstandard=0.25.0
   - zstd=1.5.7
   - pip:
+      - datasets>=3.0.0
       - langchain==1.0.8
       - langchain-core==1.1.0
       - langgraph==1.0.3
