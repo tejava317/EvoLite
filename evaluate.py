@@ -14,24 +14,32 @@ from src.agents.workflow import Workflow
 from src.agents.extractors import get_extractor_for_task
 from src.datasets import MBPPDataset, MathAlgebraDataset
 from src.evaluation.pass_at_k import evaluate_pass_at_k, calculate_pass_at_k
+from src.config import get_predefined_prompt
 
 
 # Default workflow configurations for different tasks
+# Default workflows using predefined agent names from base_agents.yaml
 DEFAULT_WORKFLOWS = {
     "MBPP": [
         "Task Parsing Agent",
         "Code Generation Agent",
-        "Code Review Agent",
+        "Code Reviewer Agent",
     ],
     "MATH": [
         "Task Parsing Agent",
-        "Task Refinement Agent",
-        "Code Generation Agent",  # Can solve math via code
+        "Task Refinement Agent", 
+        "Code Generation Agent",
     ],
 }
 
 
-def create_workflow(task_name: str, roles: list[str], use_extractor: bool = True, verbose: bool = False) -> Workflow:
+def create_workflow(
+    task_name: str, 
+    roles: list[str], 
+    use_extractor: bool = True, 
+    verbose: bool = False,
+    use_predefined_prompts: bool = True
+) -> Workflow:
     """
     Create a workflow from a list of role names.
     
@@ -40,6 +48,7 @@ def create_workflow(task_name: str, roles: list[str], use_extractor: bool = True
         roles: List of role names for the agents
         use_extractor: Whether to add an answer extractor
         verbose: Whether to print intermediate steps during execution
+        use_predefined_prompts: If True, use prompts from base_agents.yaml instead of generating with LLM
         
     Returns:
         Configured Workflow object
@@ -48,7 +57,13 @@ def create_workflow(task_name: str, roles: list[str], use_extractor: bool = True
     
     agents = []
     for role in roles:
-        agent = Agent(role=role, workflow_description=workflow_description)
+        prompt = None
+        if use_predefined_prompts:
+            # Try to get predefined prompt from base_agents.yaml
+            prompt = get_predefined_prompt(role)
+        
+        # Create agent with predefined prompt (or None to trigger generation)
+        agent = Agent(role=role, prompt=prompt, workflow_description=workflow_description)
         agents.append(agent)
     
     extractor = get_extractor_for_task(task_name) if use_extractor else None
@@ -86,7 +101,8 @@ def evaluate_single_workflow(
     use_extractor: bool = True,
     seed: int = None,
     verbose: bool = True,
-    show_intermediate: bool = False
+    show_intermediate: bool = False,
+    use_predefined_prompts: bool = True
 ) -> dict:
     """
     Evaluate a single workflow on a benchmark dataset.
@@ -100,6 +116,7 @@ def evaluate_single_workflow(
         seed: Random seed for reproducibility
         verbose: Print summary output
         show_intermediate: Print intermediate steps for each agent
+        use_predefined_prompts: Use prompts from base_agents.yaml (no LLM generation)
         
     Returns:
         Evaluation results dictionary
@@ -116,16 +133,23 @@ def evaluate_single_workflow(
         print(f"Problems: {num_problems}")
         print(f"Samples per problem: {samples_per_problem}")
         print(f"Show intermediate: {show_intermediate}")
+        print(f"Using predefined prompts: {use_predefined_prompts}")
         print(f"\nWorkflow:")
         for i, role in enumerate(roles, 1):
-            print(f"  {i}. {role}")
+            has_predefined = get_predefined_prompt(role) is not None
+            marker = "📋" if (use_predefined_prompts and has_predefined) else "🔄"
+            print(f"  {i}. {role} {marker}")
         if use_extractor:
             extractor = get_extractor_for_task(task_name)
             print(f"  → {extractor.role}")
         print(f"{'='*60}\n")
     
     # Create workflow with verbose option
-    workflow = create_workflow(task_name, roles, use_extractor, verbose=show_intermediate)
+    workflow = create_workflow(
+        task_name, roles, use_extractor, 
+        verbose=show_intermediate,
+        use_predefined_prompts=use_predefined_prompts
+    )
     
     # Load dataset
     if verbose:
@@ -268,6 +292,11 @@ def main():
         action="store_true",
         help="Show intermediate agent inputs/outputs during execution"
     )
+    parser.add_argument(
+        "--generate-prompts",
+        action="store_true",
+        help="Generate prompts with LLM instead of using predefined prompts from base_agents.yaml"
+    )
     
     args = parser.parse_args()
     
@@ -285,7 +314,8 @@ def main():
         use_extractor=not args.no_extractor,
         seed=args.seed,
         verbose=not args.quiet,
-        show_intermediate=args.show_intermediate
+        show_intermediate=args.show_intermediate,
+        use_predefined_prompts=not args.generate_prompts
     )
     
     # Return pass@1 as exit code hint (0 = all correct, 1 = some failed)
