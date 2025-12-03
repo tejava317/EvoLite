@@ -1,13 +1,16 @@
 import random
 import yaml
+import numpy as np
 from copy import deepcopy
 from pathlib import Path
 from src.agents.agent import Agent
-from src.agents.workflow import Workflow
+from src.agents.block import *
+from src.agents.workflow_block import BlockWorkflow
 from src.config import ROLE_DESCRIPTIONS
+from src.ga.multi_objective import *
 
 # =============== CONFIGURATION ===============
-POPULATION_SIZE = 10
+POPULATION_SIZE = 100
 GENERATIONS = 100
 ELITISM_RATE = 0.5
 MUTATION_RATE = 0.1
@@ -22,91 +25,102 @@ TASK_NAME = "HumanEval"
 
 # =====================================================
 
-# Evaluate the fitness function.
-# Single objective function considering token penalty.
-def evaluate_fitness(workflow):
-    
-    total_score = 0
-    output = None
-
-    pass_at_k = random.random()
-    token_term = workflow.total_tokens or 0
-    penalty = 0.01
-
-    return pass_at_k + (penalty * token_term)
-
 
 # From the agent list, select one random agent.
-def random_agent() -> Agent:
+def random_agent() -> str:
     return random.choice(ROLE_LIST)
 
 # Initialize the population.
 # In order to lessen the pass@k estimation,
 # each entity has a dictionary form. (["workflow": Workflow, "fitness": Int])
 def initialize_population(task_name: str):
-    
+
     population = []
-
+    
+    length = random.randint(1, MAX_WORKFLOW_LENGTH)
+    
     for _ in range(POPULATION_SIZE):
-        length = random.randint(1, MAX_WORKFLOW_LENGTH)
 
+        # Agent version.
         # Generate a workflow list and description string.
-        workflow_list = [random_agent() for _ in range(length)]
-        workflow_description = " -> ".join(workflow_list)
-        print(workflow_description)
+        # workflow_list = [random_agent() for _ in range(length)]
+        # workflow_description = " -> ".join(workflow_list)
+        # print(workflow_description)
         
         # Generate a list of Agents.
-        agents = []
-        for role in workflow_list:
-            agents.append(Agent(role=role, workflow_description=workflow_description))
+        # agents = []
+        # for role in workflow_list:
+        #     agents.append(Agent(role=role, workflow_description=workflow_description))
         
+        # Block version.
+        blocks = []
+        for _ in range(length):
+
+            if random.random() < 0.9:
+                role = random_agent()
+                block = AgentBlock(role)
+                blocks.append(block)
+            else:
+                block = CompositeBlock()
+                block.expand("")
+                blocks.append(block)
+
+        # print for debugging
+        # block_strs = [f"[{str(block)}]" for block in blocks]
+        # chain = " -> ".join(block_strs)
+
+        # print(f"{chain}")
+
         # Generate a workflow using agents list.
-        workflow = Workflow(task_name=task_name, agents=agents)
+        workflow = BlockWorkflow(task_name=task_name, blocks=blocks)
         
         # Evaluate a fitness function.
-        fitness = evaluate_fitness(workflow)
+        fitness = evaluate_objectives(workflow)
         population.append({"workflow": workflow, "fitness": fitness})
 
     return population
 
 # Addition operator.
 # The agent is added at the random place of the workflow.
-def addition(workflow: Workflow) -> Workflow:
+def addition(workflow: BlockWorkflow) -> BlockWorkflow:
     
     new_workflow = workflow.copy()
-    agent_list = workflow.agents
+    agent_list = workflow.blocks
 
     if len(agent_list) < MAX_WORKFLOW_LENGTH:
         
         # Choose an arbitrary agent role and insert position.
         new_agent_role = random_agent()
-        idx = random.randint(0, len(new_workflow.agents))
+        idx = random.randint(0, len(new_workflow.blocks))
 
         # Insert the agent.
-        new_workflow.insert_agent(new_agent_role, idx)
+        if random.random() < 0.7:
+            new_workflow.insert_block(AgentBlock(new_agent_role), idx)
+        else:
+            new_workflow.insert_block(CompositeBlock(), idx)
 
     return new_workflow
 
 
-def deletion(workflow: Workflow) -> Workflow:
+def deletion(workflow: BlockWorkflow) -> BlockWorkflow:
 
     new_workflow = workflow.copy()
     
-    if len(new_workflow.agents) > 1:
+    if len(new_workflow.blocks) > 1:
         
         # Choose a removing position.
-        idx = random.randint(0, len(new_workflow.agents)-1)
+        idx = random.randint(0, len(new_workflow.blocks)-1)
         
         # Insert the agent.
-        new_workflow.remove_agent(idx)
+        new_workflow.remove_block(idx)
 
     return new_workflow
 
 
-def crossover(parent1: Workflow, parent2: Workflow) -> Workflow:
+def crossover(parent1: BlockWorkflow, parent2: BlockWorkflow) -> BlockWorkflow:
 
-    w1 = parent1.copy().agents
-    w2 = parent2.copy().agents
+    w1 = parent1.copy().blocks
+    w2 = parent2.copy().blocks
 
     if len(w1) == 0 or len(w2) == 0:
         return parent1.copy()
@@ -114,31 +128,25 @@ def crossover(parent1: Workflow, parent2: Workflow) -> Workflow:
     cut1 = random.randint(0, len(w1) - 1)
     cut2 = random.randint(0, len(w2) - 1)
 
-    new_agents = w1[:cut1] + w2[cut2:]
+    new_blocks = w1[:cut1] + w2[cut2:]
 
     # enforce max size rule
-    new_agents = new_agents[:MAX_WORKFLOW_LENGTH]
+    new_blocks = new_blocks[:MAX_WORKFLOW_LENGTH]
 
-    child = Workflow(task_name=parent1.task_name, agents=new_agents)
+    child = BlockWorkflow(task_name=parent1.task_name, blocks=new_blocks)
     return child
 
 
-def mutate(workflow: Workflow) -> Workflow:
-    """Randomly apply mutation: addition or deletion."""
+def mutate(workflow: BlockWorkflow) -> BlockWorkflow:
     if random.random() < 0.5:
         return addition(workflow)
     else:
         return deletion(workflow)
 
 
-# (tournamnet) selection
-# k: sampled numbers
+# k: select k members
 def select(population, k=3):
-    # population: list[(workflow, fitness)]
-
-    contenders = random.sample(population, min(len(population), k))
-    winners = sorted(contenders, key=lambda entry: entry["fitness"], reverse=True)
-    return winners[0]
+    return random.sample(population, min(len(population), k))
 
 
 # =============== GA LOOP ===============
@@ -153,24 +161,13 @@ def run_ga(task_name: str):
         
         print(f"===== Generation {generation} =====")
 
-        new_population = []
-
-        # Apply an eliticism.
-        elite_count = max(1, int(POPULATION_SIZE * ELITISM_RATE))
-        sorted_pop = sorted(
-            population,
-            key=lambda entry: entry["fitness"],
-            reverse=True
-        )
-        elites = sorted_pop[:elite_count]
-        for e in elites:
-            new_population.append(e)
+        new_population = population
 
         # Generate a new popultion.
         while len(new_population) < POPULATION_SIZE:
             
-            parent1 = select(population)
-            parent2 = select(population)
+            parent1 = select(new_population, 1)[0]
+            parent2 = select(new_population, 1)[0]
             child = {"workflow": None, "fitness": -float("inf")}
 
             # Always do a crossover.
@@ -187,21 +184,28 @@ def run_ga(task_name: str):
             child["workflow"] = child_workflow
 
             # Evaluate the fitness.
-            child["fitness"] = evaluate_fitness(child_workflow)
+            child["fitness"] = evaluate_objectives(child_workflow)
             new_population.append(child)
 
-        population = new_population
+        # Multi-objective selection.
+        population = ngsa_select(new_population, int(len(new_population) * ELITISM_RATE))
+
+        # Plot the pareto front.
+        if (generation + 1) % 20 == 0:
+            pop_objs = np.array([entity["fitness"] for entity in population])
+            plot_pareto(pop_objs, f"generation_{generation+1}")
 
     # pick best solution after evolution
-    best = max(population, key=lambda entity: entity["fitness"])
+    best = select(population, 1)[0]
+
     best_workflow = best["workflow"]
     best_fitness = best["fitness"]
 
     print("\n==== FINAL BEST WORKFLOW ====")
     print(f"workflow: {best_workflow}")
-    print(f"fitness: {best_fitness:.5f}")
+    print(f"fitness: {best_fitness}")
     return best
-
+    # return 0
 
 # Run the algorithm
 if __name__ == "__main__":
