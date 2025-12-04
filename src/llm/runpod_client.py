@@ -159,7 +159,33 @@ class RunPodAsyncClient:
                     
                     # Extract content from various possible response formats
                     content = ""
-                    if isinstance(output, dict):
+                    usage = {}
+                    
+                    # Handle list output format (common in vLLM)
+                    if isinstance(output, list) and len(output) > 0:
+                        item = output[0]
+                        if isinstance(item, dict):
+                            # vLLM format: [{"choices": [{"tokens": ["..."]}], "usage": {...}}]
+                            if "choices" in item:
+                                choices = item["choices"]
+                                if choices and len(choices) > 0:
+                                    choice = choices[0]
+                                    # Check for tokens array (vLLM format)
+                                    if "tokens" in choice:
+                                        tokens = choice["tokens"]
+                                        content = tokens[0] if isinstance(tokens, list) and tokens else ""
+                                    # Check for message.content (OpenAI format)
+                                    elif "message" in choice:
+                                        content = choice["message"].get("content", "")
+                                    # Check for text
+                                    elif "text" in choice:
+                                        content = choice["text"]
+                            # Extract usage from item
+                            usage = item.get("usage", {})
+                        elif isinstance(item, str):
+                            content = item
+                    
+                    elif isinstance(output, dict):
                         # Check for text in output
                         if "text" in output:
                             text_data = output["text"]
@@ -167,25 +193,31 @@ class RunPodAsyncClient:
                         elif "choices" in output:
                             choices = output["choices"]
                             if choices and len(choices) > 0:
-                                content = choices[0].get("message", {}).get("content", "")
-                                if not content:
-                                    content = choices[0].get("text", "")
+                                choice = choices[0]
+                                if "tokens" in choice:
+                                    tokens = choice["tokens"]
+                                    content = tokens[0] if isinstance(tokens, list) and tokens else ""
+                                elif "message" in choice:
+                                    content = choice["message"].get("content", "")
+                                elif "text" in choice:
+                                    content = choice["text"]
                         elif "content" in output:
                             content = output["content"]
+                        usage = output.get("usage", {})
+                    
                     elif isinstance(output, str):
                         content = output
-                    elif isinstance(output, list) and len(output) > 0:
-                        content = output[0] if isinstance(output[0], str) else str(output[0])
                     
-                    # Extract token usage
-                    usage = output.get("usage", {}) if isinstance(output, dict) else {}
+                    # Normalize token usage keys (vLLM uses input/output, OpenAI uses prompt/completion)
+                    prompt_tokens = usage.get("prompt_tokens", usage.get("input", 0))
+                    completion_tokens = usage.get("completion_tokens", usage.get("output", 0))
                     
                     return JobResult(
                         job_id=job_id,
                         content=content,
-                        prompt_tokens=usage.get("prompt_tokens", 0),
-                        completion_tokens=usage.get("completion_tokens", 0),
-                        total_tokens=usage.get("total_tokens", 0),
+                        prompt_tokens=prompt_tokens,
+                        completion_tokens=completion_tokens,
+                        total_tokens=prompt_tokens + completion_tokens,
                         execution_time=time.time() - start_time,
                         status="COMPLETED"
                     )

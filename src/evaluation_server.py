@@ -24,7 +24,7 @@ from src.llm.runpod_client import RunPodAsyncClient, JobResult
 from src.datasets import MBPPDataset, MathAlgebraDataset
 from src.datasets.base import Problem
 from src.evaluation.executor import execute_code
-from src.config import get_predefined_prompt, BASE_AGENTS
+from src.config import get_predefined_prompt, BASE_AGENTS, INITIAL_PROMPTS
 
 
 # ============== Pydantic Models ==============
@@ -179,11 +179,18 @@ app = FastAPI(
 
 # ============== Helper Functions ==============
 
-def get_agent_prompt(role: str) -> str:
-    """Get prompt for an agent role."""
-    prompt = get_predefined_prompt(role)
+def get_agent_prompt(role: str, task_name: str = None) -> str:
+    """
+    Get prompt for an agent role.
+    
+    Uses task-specific prompts from initial_prompts.yaml when available.
+    """
+    # Try task-specific prompt first
+    prompt = get_predefined_prompt(role, task_name)
     if prompt:
         return prompt
+    
+    # Fallback to generic prompt
     return f"You are a {role}. Complete the task given to you."
 
 
@@ -279,7 +286,8 @@ async def run_workflow_on_problem(
     for block in blocks:
         if block.type == "agent":
             # Simple agent block - single LLM call
-            prompt = get_agent_prompt(block.role)
+            # Use task-specific prompt from initial_prompts.yaml if available
+            prompt = get_agent_prompt(block.role, task_name)
             
             result = await client.generate(
                 system_prompt=prompt,
@@ -297,8 +305,11 @@ async def run_workflow_on_problem(
             # First, expand to get inner roles
             inner_roles = await expand_composite_block_async(block, client, current_input)
             
-            # Run divider
-            divider_prompt = f"""You are a {block.divider_role or 'Divider'}. 
+            # Run divider with task-specific prompt if available
+            divider_prompt = get_agent_prompt(block.divider_role or "Divider", task_name)
+            if not divider_prompt or "You are a" in divider_prompt[:20]:
+                # Fallback to generic divider prompt
+                divider_prompt = f"""You are a {block.divider_role or 'Divider'}. 
 Divide the following task into subtasks for these roles: {', '.join(inner_roles)}
 
 Task: {current_input}
@@ -306,8 +317,8 @@ Task: {current_input}
 Provide clear subtask assignments for each role."""
             
             result = await client.generate(
-                system_prompt="You are a task coordinator.",
-                user_content=divider_prompt
+                system_prompt=divider_prompt,
+                user_content=current_input
             )
             
             if result.status != "COMPLETED":
@@ -316,10 +327,10 @@ Provide clear subtask assignments for each role."""
             divided_output = result.content
             total_tokens += result.total_tokens
             
-            # Run inner agents in parallel
+            # Run inner agents in parallel with task-specific prompts
             inner_tasks = []
             for role in inner_roles:
-                inner_prompt = get_agent_prompt(role)
+                inner_prompt = get_agent_prompt(role, task_name)
                 inner_tasks.append(
                     client.generate(
                         system_prompt=inner_prompt,
@@ -338,9 +349,9 @@ Provide clear subtask assignments for each role."""
                     inner_outputs.append(f"{inner_roles[i]}:\n{res.content}")
                     total_tokens += res.total_tokens
             
-            # Run synthesizer
-            synth_input = f"""You are a {block.synth_role or 'Synthesizer'}. 
-Combine the following outputs from multiple specialists into a coherent final result:
+            # Run synthesizer with task-specific prompt if available
+            synth_prompt = get_agent_prompt(block.synth_role or "Synthesizer", task_name)
+            synth_input = f"""Combine the following outputs from multiple specialists into a coherent final result:
 
 {chr(10).join(inner_outputs)}
 
@@ -349,7 +360,7 @@ Original task: {current_input}
 Provide the synthesized final output."""
             
             result = await client.generate(
-                system_prompt="You are an expert at synthesizing multiple perspectives.",
+                system_prompt=synth_prompt,
                 user_content=synth_input
             )
             

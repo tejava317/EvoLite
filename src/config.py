@@ -98,17 +98,52 @@ def load_base_agents():
 BASE_AGENTS = load_base_agents()
 
 
-def get_predefined_prompt(role: str) -> str:
-    """
-    Get predefined prompt for a role from base_agents.yaml.
+# Initial prompts (pre-generated for task-role combinations)
+INITIAL_PROMPTS_PATH = PROJECT_ROOT / "configs" / "initial_prompts.yaml"
+
+def load_initial_prompts():
+    """Load pre-generated prompts from initial_prompts.yaml"""
+    if not INITIAL_PROMPTS_PATH.exists():
+        return {}
     
-    Matches by role name (case-insensitive, flexible matching).
-    Returns None if no predefined prompt exists.
+    with open(INITIAL_PROMPTS_PATH, 'r', encoding='utf-8') as f:
+        initial_prompts = yaml.safe_load(f)
+    
+    return initial_prompts or {}
+
+INITIAL_PROMPTS = load_initial_prompts()
+
+
+def get_predefined_prompt(role: str, task_name: str = None) -> str:
     """
+    Get predefined prompt for a role.
+    
+    Priority:
+    1. Task-specific prompt from initial_prompts.yaml (if task_name provided)
+    2. Generic prompt from base_agents.yaml
+    
+    Args:
+        role: The agent role name
+        task_name: Optional task name for task-specific prompts
+        
+    Returns:
+        Prompt string or None if no predefined prompt exists
+    """
+    # First try task-specific prompt from initial_prompts.yaml
+    if task_name and task_name in INITIAL_PROMPTS:
+        task_prompts = INITIAL_PROMPTS[task_name]
+        if role in task_prompts:
+            return task_prompts[role]
+        # Try case-insensitive match
+        role_lower = role.lower()
+        for prompt_role, prompt in task_prompts.items():
+            if prompt_role.lower() == role_lower:
+                return prompt
+    
+    # Fallback to base_agents.yaml
     role_lower = role.lower().replace(" ", "").replace("_", "")
     
     for agent_key, agent_config in BASE_AGENTS.items():
-        # Match by task name or key
         task = agent_config.get("task", "").lower().replace(" ", "").replace("_", "")
         key_normalized = agent_key.lower().replace(" ", "").replace("_", "")
         
@@ -116,3 +151,16 @@ def get_predefined_prompt(role: str) -> str:
             return agent_config.get("prompt", "")
     
     return None
+
+
+def get_task_prompts(task_name: str) -> dict:
+    """
+    Get all predefined prompts for a task.
+    
+    Args:
+        task_name: The task name (e.g., "MBPP", "HumanEval", "LiveCodeBench")
+        
+    Returns:
+        Dictionary of role -> prompt mappings
+    """
+    return INITIAL_PROMPTS.get(task_name, {})
