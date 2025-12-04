@@ -1,5 +1,5 @@
 # src/agents/workflow.py
-from typing import TypedDict, List, Annotated
+from typing import TypedDict, List, Annotated, Optional
 import operator
 from langgraph.graph import StateGraph, END
 from src.config import TASK_DESCRIPTIONS, DEFAULT_PROMPTS
@@ -18,11 +18,15 @@ class WorkflowState(TypedDict):
 class Workflow:
     def __init__(self,
                  task_name: str,
-                 agents: List[Agent] = None):
+                 agents: List[Agent] = None,
+                 extractor: Optional[Agent] = None,
+                 verbose: bool = False):
         self.task_name = task_name
+        self.verbose = verbose  # Print intermediate steps
         
         # workflow initialization
         self.agents = agents if agents is not None else []
+        self.extractor = extractor  # Optional answer extractor agent
         self.memory = {}
 
         self.workflow_graph = None
@@ -97,11 +101,52 @@ class Workflow:
         for agent in self.agents:
             agent.task_description = new_task_description
 
+    def set_extractor(self, extractor: Agent):
+        """
+        Set an answer extractor agent that runs at the end of the workflow.
+        
+        The extractor processes the final output to produce a clean, evaluable answer.
+        This is useful for evaluation where the workflow output may be verbose.
+        
+        Args:
+            extractor: An answer extractor agent (e.g., CodeAnswerExtractor)
+        """
+        self.extractor = extractor
+        if self.agents:
+            self._build_graph()
+    
+    def set_extractor_for_task(self):
+        """
+        Automatically set the appropriate extractor based on task_name.
+        """
+        from src.agents.extractors import get_extractor_for_task
+        self.extractor = get_extractor_for_task(self.task_name)
+        if self.agents:
+            self._build_graph()
 
-    def _create_agent_node(self, agent: Agent, agent_idx: int):
+    def _create_agent_node(self, agent: Agent, agent_idx: int, is_extractor: bool = False):
         def agent_node(state: WorkflowState) -> WorkflowState:
             input_data = state["current_output"] if state.get("current_output") else state["input"]
+            
+            # Verbose: Print agent execution start
+            if self.verbose:
+                node_type = "Extractor" if is_extractor else f"Agent {agent_idx + 1}"
+                print(f"\n{'─'*60}")
+                print(f"🔄 {node_type}: {agent.role}")
+                print(f"{'─'*60}")
+                print(f"📥 INPUT ({len(input_data)} chars):")
+                print(f"   {input_data[:300]}{'...' if len(input_data) > 300 else ''}")
+                print()
+            
             response = agent.run(input_data)
+            
+            # Verbose: Print agent output
+            if self.verbose:
+                content = response['content']
+                print(f"📤 OUTPUT ({len(content)} chars):")
+                print(f"   {content[:500]}{'...' if len(content) > 500 else ''}")
+                print(f"\n   Tokens: {response.get('prompt_tokens', 0)} prompt + {response.get('response_tokens', 0)} response = {response.get('total_tokens', 0)} total")
+            
             return {
                 "current_output": response['content'],
                 "intermediate_results": [f"Agent {agent_idx} ({agent.role}): {response['content'][:100]}..."],
@@ -113,22 +158,59 @@ class Workflow:
     
     def _build_graph(self):
         workflow = StateGraph(WorkflowState)
+        
+        # Add main agents
         for idx, agent in enumerate(self.agents):
             node_name = f"agent_{idx}"
-            workflow.add_node(node_name, self._create_agent_node(agent, idx))
+            workflow.add_node(node_name, self._create_agent_node(agent, idx, is_extractor=False))
         
         if self.agents:
             workflow.set_entry_point("agent_0")
+            
+            # Connect agents in sequence
             for idx in range(len(self.agents) - 1):
                 workflow.add_edge(f"agent_{idx}", f"agent_{idx + 1}")
-            workflow.add_edge(f"agent_{len(self.agents) - 1}", END)
+            
+            # Add extractor at the end if present
+            if self.extractor:
+                extractor_idx = len(self.agents)
+                workflow.add_node("extractor", self._create_agent_node(self.extractor, extractor_idx, is_extractor=True))
+                workflow.add_edge(f"agent_{len(self.agents) - 1}", "extractor")
+                workflow.add_edge("extractor", END)
+            else:
+                workflow.add_edge(f"agent_{len(self.agents) - 1}", END)
         
         self.workflow_graph = workflow
         self.compiled_graph = workflow.compile()
     
-    def run(self, input_data: str) -> dict:
+    def run(self, input_data: str, verbose: bool = None) -> dict:
+        """
+        Run the workflow on the given input.
+        
+        Args:
+            input_data: The input to process
+            verbose: Override the workflow's verbose setting for this run
+            
+        Returns:
+            Dictionary with content, intermediate_results, and token counts
+        """
         if not self.compiled_graph:
             raise ValueError("Workflow has no agents. Add agents before running the workflow.")
+        
+        # Allow per-run verbose override
+        original_verbose = self.verbose
+        if verbose is not None:
+            self.verbose = verbose
+        
+        if self.verbose:
+            print(f"\n{'='*60}")
+            print(f"🚀 STARTING WORKFLOW: {self.task_name}")
+            print(f"{'='*60}")
+            print(f"Agents: {' → '.join(a.role for a in self.agents)}")
+            if self.extractor:
+                print(f"Extractor: {self.extractor.role}")
+            print(f"\n📋 ORIGINAL INPUT ({len(input_data)} chars):")
+            print(f"   {input_data[:400]}{'...' if len(input_data) > 400 else ''}")
         
         initial_state = {
             "input": input_data,
@@ -146,6 +228,18 @@ class Workflow:
         self.response_tokens = final_state["response_tokens"]
         self.total_tokens = final_state["total_tokens"]
         
+        if self.verbose:
+            print(f"\n{'='*60}")
+            print(f"✅ WORKFLOW COMPLETE")
+            print(f"{'='*60}")
+            print(f"📊 Total tokens: {self.total_tokens} ({self.prompt_tokens} prompt + {self.response_tokens} response)")
+            print(f"\n📤 FINAL OUTPUT ({len(self.response)} chars):")
+            print(f"   {self.response[:500]}{'...' if len(self.response) > 500 else ''}")
+            print(f"{'='*60}\n")
+        
+        # Restore original verbose setting
+        self.verbose = original_verbose
+        
         return {
             "content": final_state["current_output"],
             "intermediate_results": final_state["intermediate_results"],
@@ -162,7 +256,8 @@ class Workflow:
     def copy(self):
         """Create a copy of the workflow"""
         copied_agents = [agent.copy() for agent in self.agents]
-        return Workflow(self.task_name, copied_agents)
+        copied_extractor = self.extractor.copy() if self.extractor else None
+        return Workflow(self.task_name, copied_agents, copied_extractor, self.verbose)
 
 if __name__ == "__main__":
     task_name = "HumanEval"

@@ -78,6 +78,15 @@
   description: Parses tasks into subtasks
   category: agent/automation
 
+# === Answer Extraction Agents (for evaluation) ===
+- name: Code Answer Extractor
+  description: Extracts clean Python code from responses, outputs only executable code in a markdown code block
+  category: agent/extraction
+
+- name: Math Answer Extractor
+  description: Extracts the final mathematical answer from responses and formats it in \boxed{} notation
+  category: agent/extraction
+
 - name: Task Refinement Agent
   description: Refines and prioritizes subtasks
   category: agent/automation
