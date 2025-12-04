@@ -130,7 +130,7 @@ class PromptGenerator(LLMClient):
     def generate_prompt(self,
                         default_prompt: str,
                         description: str) -> str:
-        response = self.generate(default_prompt, description)
+        response = self.generate(system_prompt=default_prompt, user_content=description)
         return response['content']
 
 
@@ -160,7 +160,7 @@ class AgentClient(LLMClient):
     def generate_response(self,
                           prompt: str,
                           input_data: str) -> str:
-        return self.generate(prompt, input_data)
+        return self.generate(system_prompt=prompt, user_content=input_data)
 
 
 if __name__ == "__main__":
