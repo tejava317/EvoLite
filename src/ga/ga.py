@@ -10,7 +10,7 @@ from src.config import ROLE_DESCRIPTIONS
 from src.ga.multi_objective import *
 
 # =============== CONFIGURATION ===============
-POPULATION_SIZE = 100
+POPULATION_SIZE = 30
 GENERATIONS = 100
 ELITISM_RATE = 0.5
 MUTATION_RATE = 0.1
@@ -54,22 +54,24 @@ def initialize_population(task_name: str):
         
         # Block version.
         blocks = []
-        for _ in range(length):
+        curr_length = 0
+        while(curr_length < length):
 
-            if random.random() < 0.9:
+            if random.random() < 0.8:
                 role = random_agent()
                 block = AgentBlock(role)
                 blocks.append(block)
+                curr_length += block.num_agents
             else:
                 block = CompositeBlock()
                 block.expand("")
                 blocks.append(block)
 
         # print for debugging
-        # block_strs = [f"[{str(block)}]" for block in blocks]
-        # chain = " -> ".join(block_strs)
+        block_strs = [f"[{str(block)}]" for block in blocks]
+        chain = " -> ".join(block_strs)
 
-        # print(f"{chain}")
+        print(f"{chain}")
 
         # Generate a workflow using agents list.
         workflow = BlockWorkflow(task_name=task_name, blocks=blocks)
