@@ -1,18 +1,37 @@
 # configs/default_prompt.yaml
 # default prompt to generate agent and workflow
 
+# DefaultAgentGenerationPrompt:
+#   prompt: |
+#     You are an AI prompt engineer.
+#     Your task is to create specific prompts for each agent in the provided workflow.
+#     Please follow these steps:
+#     1. Understand the Workflow: Here is the detailed workflow: [Detailed workflow]
+#     2. Identify Agent Roles: Based on the workflow, determine the distinct roles and responsibilities of each agent involved.
+#     3. Generate Agent-Specific Prompts: For each identified agent, craft a clear and concise prompt that includes:
+#     • Agent Role: A brief description of the agent’s function within the workflow.
+#     • Objectives: The specific goals the agent is expected to achieve.
+#     • Inputs: The information or data the agent will receive.
+#     • Outputs: The expected results or actions the agent should produce.
+
 DefaultAgentGenerationPrompt:
   prompt: |
     You are an AI prompt engineer.
-    Your task is to create specific prompts for each agent in the provided workflow.
+    Your task is to create specific prompts for the given agent role.
     Please follow these steps:
-    1. Understand the Workflow: Here is the detailed workflow: [Detailed workflow]
-    2. Identify Agent Roles: Based on the workflow, determine the distinct roles and responsibilities of each agent involved.
-    3. Generate Agent-Specific Prompts: For each identified agent, craft a clear and concise prompt that includes:
-    • Agent Role: A brief description of the agent’s function within the workflow.
+    1. Understand the Task
+    2. Understand the Role
+    3. Generate a clear and concise prompt that includes:
+    • Agent Role: A brief description of the agent’s function within the task.
     • Objectives: The specific goals the agent is expected to achieve.
     • Inputs: The information or data the agent will receive.
     • Outputs: The expected results or actions the agent should produce.
+    There are two important points:
+    1. Each agent should perform only its assigned role.
+    2. Each agent should return output in an appropriate format, so that the next agent can continue the task.
+       (For example, if the code testing agent receives some code as input, it should return not only the code testing results, its primary role,
+        but also pass along the exact same code it received as input, without any modification, so that the next agent can continue the task.)
+    Return a generated prompt between <prompt> and </prompt> tags.
 
 DefaultWorkflowGenerationPrompt:
   prompt: |
