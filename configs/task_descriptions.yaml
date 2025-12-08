@@ -1,11 +1,23 @@
 # configs/task_descriptions.yaml
-# task descriptions for each dataset D
+# Task descriptions for each dataset
+# These are appended to the FIRST agent's system prompt only
 
-LiveCodeBench:
+MBPP:
   description: |
-    The code generation task in LiveCodeBench involves generating correct and functional code
-    from a natural language problem description, where the model is evaluated based on its ability
-    to pass a set of unseen test cases.
+    The MBPP (Mostly Basic Python Problems) dataset comprises approximately 1,000 crowd-sourced Python programming problems,
+    each including a task description, code solution, and three automated test cases,
+    designed to be solvable by entry-level programmers and covering programming fundamentals and standard library functionality.
+
+MATH:
+  description: |
+    The MATH dataset contains challenging competition mathematics problems requiring multi-step reasoning.
+    Each problem requires careful mathematical analysis, and the final answer should be provided in LaTeX boxed notation.
+
+CRUX-O:
+  description: |
+    The CRUX-O (Code Reasoning and Understanding eXecution - Output) dataset tests code execution prediction.
+    Given Python code and input values, predict the exact output the code produces when executed.
+    Requires careful tracing through code logic and handling of edge cases.
 
 HumanEval:
   description: |
@@ -14,8 +26,8 @@ HumanEval:
     designed to evaluate the code generation capabilities of large language models
     by assessing their ability to generate functionally correct code from docstrings.
 
-MBPP:
+LiveCodeBench:
   description: |
-    The MBPP (Mostly Basic Python Problems) dataset comprises approximately 1,000 crowd-sourced Python programming problems,
-    each including a task description, code solution, and three automated test cases,
-    designed to be solvable by entry-level programmers and covering programming fundamentals and standard library functionality.
+    The code generation task in LiveCodeBench involves generating correct and functional code
+    from a natural language problem description, where the model is evaluated based on its ability
+    to pass a set of unseen test cases. Problems are from recent competitive programming contests.

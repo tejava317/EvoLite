@@ -76,7 +76,7 @@ class EvaluationClient:
     def _get_sync_client(self) -> httpx.Client:
         """Get a sync HTTP client."""
         return httpx.Client(
-            timeout=httpx.Timeout(600.0, connect=20.0),
+            timeout=httpx.Timeout(3600.0, connect=30.0),  # 1 hour timeout
             limits=httpx.Limits(
                 max_connections=500,
                 max_keepalive_connections=200,
@@ -88,7 +88,7 @@ class EvaluationClient:
         """Get or create async HTTP client."""
         if self._async_client is None or self._async_client.is_closed:
             self._async_client = httpx.AsyncClient(
-                timeout=httpx.Timeout(600.0, connect=20.0),
+                timeout=httpx.Timeout(3600.0, connect=30.0),  # 1 hour timeout
                 limits=httpx.Limits(
                     max_connections=1000,
                     max_keepalive_connections=400,
@@ -116,7 +116,8 @@ class EvaluationClient:
         task_name: str = "MBPP",
         num_problems: int = 10,
         use_extractor: bool = True,
-        seed: Optional[int] = None
+        seed: Optional[int] = None,
+        think: bool = False
     ) -> EvalResult:
         """
         Evaluate a workflow with simple role list (converts to AgentBlocks).
@@ -127,6 +128,7 @@ class EvaluationClient:
             num_problems: Number of problems to evaluate
             use_extractor: Whether to use answer extractor
             seed: Random seed for reproducibility
+            think: Enable thinking mode (/think). Default is /no_think
             
         Returns:
             EvalResult with pass@1 and metrics
@@ -135,6 +137,7 @@ class EvaluationClient:
             "roles": roles,
             "task_name": task_name,
             "use_extractor": use_extractor,
+            "think": think,
             "num_problems": num_problems,
             "seed": seed
         }
@@ -173,7 +176,8 @@ class EvaluationClient:
         task_name: str = "MBPP",
         num_problems: int = 10,
         use_extractor: bool = True,
-        seed: Optional[int] = None
+        seed: Optional[int] = None,
+        think: bool = False
     ) -> EvalResult:
         """
         Evaluate a BlockWorkflow.
@@ -184,6 +188,7 @@ class EvaluationClient:
             num_problems: Number of problems to evaluate
             use_extractor: Whether to use answer extractor
             seed: Random seed for reproducibility
+            think: Enable thinking mode (/think). Default is /no_think
             
         Returns:
             EvalResult with pass@1 and metrics
@@ -192,7 +197,8 @@ class EvaluationClient:
             "workflow": {
                 "blocks": [b.to_dict() for b in blocks],
                 "task_name": task_name,
-                "use_extractor": use_extractor
+                "use_extractor": use_extractor,
+                "think": think
             },
             "num_problems": num_problems,
             "seed": seed
@@ -232,13 +238,15 @@ class EvaluationClient:
         task_name: str = "MBPP",
         num_problems: int = 10,
         use_extractor: bool = True,
-        seed: Optional[int] = None
+        seed: Optional[int] = None,
+        think: bool = False
     ) -> EvalResult:
         """Async version of evaluate_simple."""
         payload = {
             "roles": roles,
             "task_name": task_name,
             "use_extractor": use_extractor,
+            "think": think,
             "num_problems": num_problems,
             "seed": seed
         }
@@ -277,14 +285,16 @@ class EvaluationClient:
         task_name: str = "MBPP",
         num_problems: int = 10,
         use_extractor: bool = True,
-        seed: Optional[int] = None
+        seed: Optional[int] = None,
+        think: bool = False
     ) -> EvalResult:
         """Async version of evaluate."""
         payload = {
             "workflow": {
                 "blocks": [b.to_dict() for b in blocks],
                 "task_name": task_name,
-                "use_extractor": use_extractor
+                "use_extractor": use_extractor,
+                "think": think
             },
             "num_problems": num_problems,
             "seed": seed
@@ -324,7 +334,8 @@ class EvaluationClient:
         task_name: str = "MBPP",
         num_problems: int = 10,
         use_extractor: bool = True,
-        seed: Optional[int] = None
+        seed: Optional[int] = None,
+        think: bool = False
     ) -> List[EvalResult]:
         """
         Evaluate multiple workflows (simple role lists) on the same problems.
@@ -335,6 +346,7 @@ class EvaluationClient:
             num_problems: Number of problems
             use_extractor: Whether to use extractor
             seed: Random seed
+            think: Enable thinking mode (/think). Default is /no_think
             
         Returns:
             List of EvalResults, one per workflow
@@ -344,7 +356,7 @@ class EvaluationClient:
             [BlockConfig(type="agent", role=role) for role in roles]
             for roles in workflows
         ]
-        return self.evaluate_batch(block_workflows, task_name, num_problems, use_extractor, seed)
+        return self.evaluate_batch(block_workflows, task_name, num_problems, use_extractor, seed, think)
     
     def evaluate_batch(
         self,
@@ -352,7 +364,8 @@ class EvaluationClient:
         task_name: str = "MBPP",
         num_problems: int = 10,
         use_extractor: bool = True,
-        seed: Optional[int] = None
+        seed: Optional[int] = None,
+        think: bool = False
     ) -> List[EvalResult]:
         """
         Evaluate multiple BlockWorkflows on the same problems.
@@ -363,6 +376,7 @@ class EvaluationClient:
             num_problems: Number of problems
             use_extractor: Whether to use extractor
             seed: Random seed
+            think: Enable thinking mode (/think). Default is /no_think
             
         Returns:
             List of EvalResults, one per workflow
@@ -372,7 +386,8 @@ class EvaluationClient:
                 {
                     "blocks": [b.to_dict() for b in blocks],
                     "task_name": task_name,
-                    "use_extractor": use_extractor
+                    "use_extractor": use_extractor,
+                    "think": think
                 }
                 for blocks in workflows
             ],
@@ -432,11 +447,15 @@ class EvaluationClient:
         task_name: str = "MBPP",
         num_problems: int = 10,
         use_extractor: bool = True,
-        seed: Optional[int] = None
+        seed: Optional[int] = None,
+        think: bool = False
     ) -> List[EvalResult]:
         """
         Async version of evaluate_batch with chunking to avoid oversized single requests.
         Client no longer chunks; server is responsible for queuing.
+        
+        Args:
+            think: Enable thinking mode (/think). Default is /no_think
         """
 
         payload = {
@@ -444,7 +463,8 @@ class EvaluationClient:
                 {
                     "blocks": [b.to_dict() for b in blocks],
                     "task_name": task_name,
-                    "use_extractor": use_extractor
+                    "use_extractor": use_extractor,
+                    "think": think
                 }
                 for blocks in workflows
             ],
