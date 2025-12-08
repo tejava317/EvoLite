@@ -6,17 +6,32 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+# API Configuration - supports both OpenAI and RunPod
+# Priority: RunPod > OpenAI
+
+RUNPOD_API_KEY = os.getenv("RUNPOD_API_KEY")
+RUNPOD_ENDPOINT_ID = os.getenv("RUNPOD_ENDPOINT_ID")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
-if not OPENAI_API_KEY:
-    raise ValueError("OpenAI API key is not set in the .env file.")
+# Determine which API to use
+USE_RUNPOD = bool(RUNPOD_API_KEY and RUNPOD_ENDPOINT_ID)
 
-# ANTROPIC_API_KEY = os.getenv("ANTROPIC_API_KEY")
+if USE_RUNPOD:
+    API_KEY = RUNPOD_API_KEY
+    BASE_URL = f"https://api.runpod.ai/v2/{RUNPOD_ENDPOINT_ID}/openai/v1"
+    print(f"Using RunPod API (endpoint: {RUNPOD_ENDPOINT_ID})")
+elif OPENAI_API_KEY:
+    API_KEY = OPENAI_API_KEY
+    BASE_URL = None  # Use default OpenAI URL
+    print("Using OpenAI API")
+else:
+    raise ValueError(
+        "No API key configured. Set either:\n"
+        "  - RUNPOD_API_KEY and RUNPOD_ENDPOINT_ID for RunPod, or\n"
+        "  - OPENAI_API_KEY for OpenAI"
+    )
 
-# if not ANTROPIC_API_KEY:
-#     raise ValueError("Anthropic API key is not set in the .env file.")
-
-# Load defualt prompts.
+# Load default prompts.
 PROJECT_ROOT = Path(__file__).parent.parent
 DEFAULT_PROMPTS_PATH = PROJECT_ROOT / "configs" / "default_prompts.yaml"
 
@@ -65,3 +80,87 @@ def load_role_descriptions():
     return role_descriptions
 
 ROLE_DESCRIPTIONS = load_role_descriptions()
+
+
+# Base agents with predefined prompts
+BASE_AGENTS_PATH = PROJECT_ROOT / "configs" / "base_agents.yaml"
+
+def load_base_agents():
+    """Load predefined agent prompts from base_agents.yaml"""
+    if not BASE_AGENTS_PATH.exists():
+        return {}
+    
+    with open(BASE_AGENTS_PATH, 'r', encoding='utf-8') as f:
+        base_agents = yaml.safe_load(f)
+    
+    return base_agents or {}
+
+BASE_AGENTS = load_base_agents()
+
+
+# Initial prompts (pre-generated for task-role combinations)
+INITIAL_PROMPTS_PATH = PROJECT_ROOT / "configs" / "initial_prompts.yaml"
+
+def load_initial_prompts():
+    """Load pre-generated prompts from initial_prompts.yaml"""
+    if not INITIAL_PROMPTS_PATH.exists():
+        return {}
+    
+    with open(INITIAL_PROMPTS_PATH, 'r', encoding='utf-8') as f:
+        initial_prompts = yaml.safe_load(f)
+    
+    return initial_prompts or {}
+
+INITIAL_PROMPTS = load_initial_prompts()
+
+
+def get_predefined_prompt(role: str, task_name: str = None) -> str:
+    """
+    Get predefined prompt for a role.
+    
+    Priority:
+    1. Task-specific prompt from initial_prompts.yaml (if task_name provided)
+    2. Generic prompt from base_agents.yaml
+    
+    Args:
+        role: The agent role name
+        task_name: Optional task name for task-specific prompts
+        
+    Returns:
+        Prompt string or None if no predefined prompt exists
+    """
+    # First try task-specific prompt from initial_prompts.yaml
+    if task_name and task_name in INITIAL_PROMPTS:
+        task_prompts = INITIAL_PROMPTS[task_name]
+        if role in task_prompts:
+            return task_prompts[role]
+        # Try case-insensitive match
+        role_lower = role.lower()
+        for prompt_role, prompt in task_prompts.items():
+            if prompt_role.lower() == role_lower:
+                return prompt
+    
+    # Fallback to base_agents.yaml
+    role_lower = role.lower().replace(" ", "").replace("_", "")
+    
+    for agent_key, agent_config in BASE_AGENTS.items():
+        task = agent_config.get("task", "").lower().replace(" ", "").replace("_", "")
+        key_normalized = agent_key.lower().replace(" ", "").replace("_", "")
+        
+        if role_lower == task or role_lower == key_normalized:
+            return agent_config.get("prompt", "")
+    
+    return None
+
+
+def get_task_prompts(task_name: str) -> dict:
+    """
+    Get all predefined prompts for a task.
+    
+    Args:
+        task_name: The task name (e.g., "MBPP", "HumanEval", "LiveCodeBench")
+        
+    Returns:
+        Dictionary of role -> prompt mappings
+    """
+    return INITIAL_PROMPTS.get(task_name, {})

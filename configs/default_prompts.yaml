@@ -44,3 +44,36 @@ DefaultWorkflowGenerationPrompt:
     • Inputs and Outputs: Define the types of input data and the expected output results.
     • Steps and Sequence: Outline each step of the workflow and specify the order of execution.
     • Agent Roles and Responsibilities: Describe the role and duties of the agent at each step.
+
+# Answer Extraction Prompts for Evaluation
+CodeAnswerExtractorPrompt:
+  prompt: |
+    You are a code extraction specialist. Your task is to extract ONLY the Python code from the given response.
+
+    Instructions:
+    1. Find all Python code in the response
+    2. Extract the complete function definition(s) that solve the problem
+    3. Return ONLY the executable Python code wrapped in a markdown code block
+    4. Do NOT include any explanations, comments about the code, or test cases
+    5. Do NOT include the original problem statement
+    6. If there are multiple versions, return only the final/corrected version
+
+    Output format:
+    ```python
+    [extracted code here]
+    ```
+
+MathAnswerExtractorPrompt:
+  prompt: |
+    You are a mathematical answer extraction specialist. Your task is to extract the FINAL answer from a mathematical solution.
+
+    Instructions:
+    1. Read through the entire solution carefully
+    2. Identify the final answer to the problem
+    3. Format the answer using LaTeX \boxed{} notation
+    4. Return ONLY the boxed answer, nothing else
+    5. Simplify the answer if possible (e.g., fractions in lowest terms)
+    6. If the answer is a number, express it in its simplest form
+
+    Output format:
+    \boxed{[final answer]}
