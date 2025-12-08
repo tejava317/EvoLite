@@ -58,13 +58,22 @@ class BaseDataset(ABC):
         return [self.problems[i] for i in indices]
     
     def sample(self, n: int, seed: Optional[int] = None) -> List[Problem]:
-        """Sample n random problems from the dataset."""
+        """
+        Sample n problems from the dataset.
+        
+        - If n <= dataset size: sample without replacement (random.sample)
+        - If n  > dataset size: sample with replacement (random.choices) so large
+          workloads can exceed the dataset cardinality (useful for load testing).
+        """
         import random
         if not self._loaded:
             self.load()
         if seed is not None:
             random.seed(seed)
-        return random.sample(self.problems, min(n, len(self.problems)))
+        if n <= len(self.problems):
+            return random.sample(self.problems, n)
+        # With replacement when n > dataset size
+        return random.choices(self.problems, k=n)
     
     def __len__(self) -> int:
         if not self._loaded:

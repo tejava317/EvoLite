@@ -9,6 +9,7 @@ import os
 import asyncio
 import time
 from typing import Optional
+from collections import deque
 from dataclasses import dataclass
 
 import httpx
@@ -46,6 +47,13 @@ class RunPodAsyncClient:
         default_max_tokens: int = 2000,
         poll_interval: float = 0.5,
         max_poll_time: float = 300,
+        max_concurrent_run: int = 200,
+        run_rate_limit: int = 1000,
+        run_rate_window: float = 10.0,
+        max_concurrent_status: int = 400,
+        status_rate_limit: int = 2000,
+        status_rate_window: float = 10.0,
+        enable_monitoring: bool = True,
     ):
         self.api_key = api_key or os.getenv("RUNPOD_API_KEY")
         self.endpoint_id = endpoint_id or os.getenv("RUNPOD_ENDPOINT_ID")
@@ -65,17 +73,113 @@ class RunPodAsyncClient:
         self.default_max_tokens = default_max_tokens
         self.poll_interval = poll_interval
         self.max_poll_time = max_poll_time
+        self.max_concurrent_run = max_concurrent_run
+        self.run_rate_limit = run_rate_limit
+        self.run_rate_window = run_rate_window
+        self.max_concurrent_status = max_concurrent_status
+        self.status_rate_limit = status_rate_limit
+        self.status_rate_window = status_rate_window
         
         # Reusable async client with connection pooling
         self._client: Optional[httpx.AsyncClient] = None
+        
+        # Monitoring counters
+        self.enable_monitoring = enable_monitoring
+        self._active_jobs = 0  # Jobs submitted but not yet completed
+        self._total_submitted = 0
+        self._total_completed = 0
+        self._total_failed = 0
+        self._peak_active = 0
+        self._lock = asyncio.Lock()
+        self._submit_lock = asyncio.Lock()
+        self._run_timestamps = deque()  # track recent /run submissions for rate limiting
+        self._status_timestamps = deque()  # track recent /status calls
+    
+    async def _inc_active(self):
+        """Increment active job count."""
+        async with self._lock:
+            self._active_jobs += 1
+            self._total_submitted += 1
+            if self._active_jobs > self._peak_active:
+                self._peak_active = self._active_jobs
+    
+    async def _dec_active(self, success: bool = True):
+        """Decrement active job count."""
+        async with self._lock:
+            self._active_jobs -= 1
+            if success:
+                self._total_completed += 1
+            else:
+                self._total_failed += 1
+    
+    async def _await_status_slot(self):
+        """
+        Enforce local limits for /status: concurrency and rate.
+        """
+        while True:
+            async with self._lock:
+                now = time.time()
+                while self._status_timestamps and now - self._status_timestamps[0] > self.status_rate_window:
+                    self._status_timestamps.popleft()
+                within_rate = len(self._status_timestamps) < self.status_rate_limit
+                # we reuse _active_jobs for run tracking, so only rate matters for status;
+                # cap concurrent status to max_concurrent_status by counting recent calls in window
+                within_concurrency = len(self._status_timestamps) < self.max_concurrent_status
+                if within_rate and within_concurrency:
+                    self._status_timestamps.append(now)
+                    return
+            await asyncio.sleep(0.01)
+    
+    async def _await_submit_slot(self):
+        """
+        Enforce local limits: concurrent /run <= max_concurrent_run
+        and rate limit run_rate_limit per run_rate_window seconds.
+        """
+        while True:
+            async with self._lock:
+                now = time.time()
+                # prune old timestamps
+                while self._run_timestamps and now - self._run_timestamps[0] > self.run_rate_window:
+                    self._run_timestamps.popleft()
+                within_rate = len(self._run_timestamps) < self.run_rate_limit
+                within_concurrency = self._active_jobs < self.max_concurrent_run
+                if within_rate and within_concurrency:
+                    self._run_timestamps.append(now)
+                    return
+            await asyncio.sleep(0.01)
+    
+    def get_stats(self) -> dict:
+        """Get current monitoring stats."""
+        return {
+            "active_jobs": self._active_jobs,
+            "total_submitted": self._total_submitted,
+            "total_completed": self._total_completed,
+            "total_failed": self._total_failed,
+            "peak_active": self._peak_active,
+        }
+    
+    def print_stats(self):
+        """Print current stats."""
+        stats = self.get_stats()
+        print(f"[RunPod Stats] Active: {stats['active_jobs']}, "
+              f"Submitted: {stats['total_submitted']}, "
+              f"Completed: {stats['total_completed']}, "
+              f"Failed: {stats['total_failed']}, "
+              f"Peak: {stats['peak_active']}")
     
     async def _get_client(self) -> httpx.AsyncClient:
         """Get or create the async HTTP client."""
         if self._client is None or self._client.is_closed:
+            # Increase connection pool and queue to avoid local bottlenecks when firing many jobs.
+            # Note: RunPod still queues on their side; this just reduces client-side queuing.
             self._client = httpx.AsyncClient(
                 headers=self.headers,
                 timeout=httpx.Timeout(60.0, connect=10.0),
-                limits=httpx.Limits(max_connections=500, max_keepalive_connections=100)
+                limits=httpx.Limits(
+                    max_connections=2000,
+                    max_keepalive_connections=400,
+                    keepalive_expiry=60.0,
+                )
             )
         return self._client
     
@@ -84,6 +188,127 @@ class RunPodAsyncClient:
         if self._client and not self._client.is_closed:
             await self._client.aclose()
             self._client = None
+
+    async def poll_job_once(self, job_id: str, start_time: float = None) -> Optional[JobResult]:
+        """
+        Non-blocking poll: return result if completed/failed/timeout, otherwise None.
+        """
+        start_time = start_time or time.time()
+        elapsed = time.time() - start_time
+        if elapsed > self.max_poll_time:
+            await self._dec_active(success=False)
+            return JobResult(
+                job_id=job_id,
+                content="",
+                prompt_tokens=0,
+                completion_tokens=0,
+                total_tokens=0,
+                execution_time=elapsed,
+                status="TIMEOUT",
+                error=f"Job timed out after {self.max_poll_time}s"
+            )
+
+        try:
+            status_data = await self.check_job_status(job_id)
+            status = status_data.get("status", "UNKNOWN")
+
+            if status == "COMPLETED":
+                output = status_data.get("output", {})
+
+                # Extract content from various possible response formats
+                content = ""
+                usage = {}
+
+                # Handle list output format (common in vLLM)
+                if isinstance(output, list) and len(output) > 0:
+                    item = output[0]
+                    if isinstance(item, dict):
+                        if "choices" in item:
+                            choices = item["choices"]
+                            if choices and len(choices) > 0:
+                                choice = choices[0]
+                                if "tokens" in choice:
+                                    tokens = choice["tokens"]
+                                    content = tokens[0] if isinstance(tokens, list) and tokens else ""
+                                elif "message" in choice:
+                                    content = choice["message"].get("content", "")
+                                elif "text" in choice:
+                                    content = choice["text"]
+                        usage = item.get("usage", {})
+                    elif isinstance(item, str):
+                        content = item
+
+                elif isinstance(output, dict):
+                    if "text" in output:
+                        text_data = output["text"]
+                        content = text_data[0] if isinstance(text_data, list) else text_data
+                    elif "choices" in output:
+                        choices = output["choices"]
+                        if choices and len(choices) > 0:
+                            choice = choices[0]
+                            if "tokens" in choice:
+                                tokens = choice["tokens"]
+                                content = tokens[0] if isinstance(tokens, list) and tokens else ""
+                            elif "message" in choice:
+                                content = choice["message"].get("content", "")
+                            elif "text" in choice:
+                                content = choice["text"]
+                    elif "content" in output:
+                        content = output["content"]
+                    usage = output.get("usage", {})
+
+                elif isinstance(output, str):
+                    content = output
+
+                prompt_tokens = usage.get("prompt_tokens", usage.get("input", 0))
+                completion_tokens = usage.get("completion_tokens", usage.get("output", 0))
+
+                await self._dec_active(success=True)
+                return JobResult(
+                    job_id=job_id,
+                    content=content,
+                    prompt_tokens=prompt_tokens,
+                    completion_tokens=completion_tokens,
+                    total_tokens=prompt_tokens + completion_tokens,
+                    execution_time=time.time() - start_time,
+                    status="COMPLETED"
+                )
+
+            elif status == "FAILED":
+                error = status_data.get("error", "Unknown error")
+                await self._dec_active(success=False)
+                return JobResult(
+                    job_id=job_id,
+                    content="",
+                    prompt_tokens=0,
+                    completion_tokens=0,
+                    total_tokens=0,
+                    execution_time=time.time() - start_time,
+                    status="FAILED",
+                    error=str(error)
+                )
+
+            elif status in ("IN_QUEUE", "IN_PROGRESS"):
+                return None
+
+            else:
+                return None
+
+        except httpx.HTTPError:
+            # If we've already waited beyond max_poll_time, treat as timeout
+            if elapsed > self.max_poll_time:
+                await self._dec_active(success=False)
+                return JobResult(
+                    job_id=job_id,
+                    content="",
+                    prompt_tokens=0,
+                    completion_tokens=0,
+                    total_tokens=0,
+                    execution_time=elapsed,
+                    status="TIMEOUT",
+                    error="Polling failed repeatedly",
+                )
+            return None
     
     async def submit_job(
         self,
@@ -97,6 +322,7 @@ class RunPodAsyncClient:
         Returns job_id immediately (non-blocking).
         """
         client = await self._get_client()
+        await self._await_submit_slot()
         
         payload = {
             "input": {
@@ -112,11 +338,13 @@ class RunPodAsyncClient:
         response.raise_for_status()
         
         data = response.json()
+        await self._inc_active()
         return data["id"]
     
     async def check_job_status(self, job_id: str) -> dict:
         """Check the status of a job."""
         client = await self._get_client()
+        await self._await_status_slot()
         
         response = await client.get(f"{self.base_url}/status/{job_id}")
         response.raise_for_status()
@@ -139,6 +367,7 @@ class RunPodAsyncClient:
         while True:
             elapsed = time.time() - start_time
             if elapsed > self.max_poll_time:
+                await self._dec_active(success=False)
                 return JobResult(
                     job_id=job_id,
                     content="",
@@ -212,6 +441,7 @@ class RunPodAsyncClient:
                     prompt_tokens = usage.get("prompt_tokens", usage.get("input", 0))
                     completion_tokens = usage.get("completion_tokens", usage.get("output", 0))
                     
+                    await self._dec_active(success=True)
                     return JobResult(
                         job_id=job_id,
                         content=content,
@@ -224,6 +454,7 @@ class RunPodAsyncClient:
                 
                 elif status == "FAILED":
                     error = status_data.get("error", "Unknown error")
+                    await self._dec_active(success=False)
                     return JobResult(
                         job_id=job_id,
                         content="",

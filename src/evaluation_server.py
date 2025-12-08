@@ -17,6 +17,7 @@ from typing import Optional, List, Union
 from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
 
+import logging
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
@@ -54,7 +55,7 @@ class SimpleWorkflowConfig(BaseModel):
 class EvaluateRequest(BaseModel):
     """Request to evaluate a single workflow."""
     workflow: WorkflowConfig
-    num_problems: int = Field(default=10, ge=1, le=500)
+    num_problems: int = Field(default=10, ge=1, le=5000)
     seed: Optional[int] = Field(default=None, description="Random seed for problem sampling")
 
 
@@ -63,14 +64,14 @@ class SimpleEvaluateRequest(BaseModel):
     roles: List[str] = Field(..., description="List of agent role names")
     task_name: str = Field(default="MBPP", description="Task/benchmark name")
     use_extractor: bool = Field(default=True, description="Whether to use answer extractor")
-    num_problems: int = Field(default=10, ge=1, le=500)
+    num_problems: int = Field(default=10, ge=1, le=5000)
     seed: Optional[int] = Field(default=None, description="Random seed for problem sampling")
 
 
 class BatchEvaluateRequest(BaseModel):
     """Request to evaluate multiple workflows."""
     workflows: List[WorkflowConfig]
-    num_problems: int = Field(default=10, ge=1, le=500)
+    num_problems: int = Field(default=10, ge=1, le=5000)
     seed: Optional[int] = Field(default=None)
 
 
@@ -114,14 +115,15 @@ async def lifespan(app: FastAPI):
     """Load resources at startup, cleanup at shutdown."""
     print("🚀 Starting Evaluation Server...")
     
-    # Initialize RunPod client
+    # Initialize RunPod client with monitoring enabled
     state.runpod_client = RunPodAsyncClient(
         default_temperature=0.1,
         default_max_tokens=2000,
         poll_interval=0.3,
-        max_poll_time=120,
+        max_poll_time=600,  # 10 minutes timeout window
+        enable_monitoring=True,
     )
-    print("✓ RunPod client initialized")
+    print("✓ RunPod client initialized (monitoring enabled)")
     
     # Pre-load datasets
     print("📂 Loading datasets...")
@@ -175,6 +177,16 @@ app = FastAPI(
     version="2.0.0",
     lifespan=lifespan
 )
+
+
+# Silence access logs for noisy endpoints (e.g., /stats polling)
+class _EndpointFilter(logging.Filter):
+    def filter(self, record: logging.LogRecord) -> bool:
+        msg = record.getMessage()
+        return "/stats " not in msg
+
+
+logging.getLogger("uvicorn.access").addFilter(_EndpointFilter())
 
 
 # ============== Helper Functions ==============
@@ -271,118 +283,96 @@ async def run_workflow_on_problem(
     blocks: List[BlockConfig],
     task_name: str,
     use_extractor: bool,
-    client: RunPodAsyncClient
-) -> tuple[str, int, float]:
+    client: RunPodAsyncClient,
+    poll_interval: float = 0.01,
+) -> tuple[str, int, float, str]:
     """
-    Run a BlockWorkflow on a single problem.
+    Run a BlockWorkflow on a single problem using fire-and-poll (submit all jobs, poll asynchronously).
     
-    Returns: (final_output, total_tokens, execution_time)
+    Returns: (final_output, total_tokens, execution_time, error)
     """
     start_time = time.time()
+    roles = expand_blocks_to_roles(blocks, client)
+
+    # Per-problem state
     current_input = problem.prompt
     total_tokens = 0
-    
-    # Process each block
-    for block in blocks:
-        if block.type == "agent":
-            # Simple agent block - single LLM call
-            # Use task-specific prompt from initial_prompts.yaml if available
-            prompt = get_agent_prompt(block.role, task_name)
-            
-            result = await client.generate(
-                system_prompt=prompt,
-                user_content=current_input
-            )
-            
-            if result.status != "COMPLETED":
-                raise Exception(f"Agent {block.role} failed: {result.error}")
-            
-            current_input = result.content
-            total_tokens += result.total_tokens
-            
-        elif block.type == "composite":
-            # Composite block - divider -> inner agents -> synthesizer
-            # First, expand to get inner roles
-            inner_roles = await expand_composite_block_async(block, client, current_input)
-            
-            # Run divider with task-specific prompt if available
-            divider_prompt = get_agent_prompt(block.divider_role or "Divider", task_name)
-            if not divider_prompt or "You are a" in divider_prompt[:20]:
-                # Fallback to generic divider prompt
-                divider_prompt = f"""You are a {block.divider_role or 'Divider'}. 
-Divide the following task into subtasks for these roles: {', '.join(inner_roles)}
+    error: Optional[str] = None
 
-Task: {current_input}
-
-Provide clear subtask assignments for each role."""
-            
-            result = await client.generate(
-                system_prompt=divider_prompt,
-                user_content=current_input
-            )
-            
-            if result.status != "COMPLETED":
-                raise Exception(f"Divider failed: {result.error}")
-            
-            divided_output = result.content
-            total_tokens += result.total_tokens
-            
-            # Run inner agents in parallel with task-specific prompts
-            inner_tasks = []
-            for role in inner_roles:
-                inner_prompt = get_agent_prompt(role, task_name)
-                inner_tasks.append(
-                    client.generate(
-                        system_prompt=inner_prompt,
-                        user_content=f"Your assigned subtask from the divider:\n{divided_output}\n\nOriginal task:\n{current_input}"
-                    )
-                )
-            
-            inner_results = await asyncio.gather(*inner_tasks, return_exceptions=True)
-            
-            # Collect inner outputs
-            inner_outputs = []
-            for i, res in enumerate(inner_results):
-                if isinstance(res, Exception):
-                    inner_outputs.append(f"{inner_roles[i]}: [Error: {res}]")
-                else:
-                    inner_outputs.append(f"{inner_roles[i]}:\n{res.content}")
-                    total_tokens += res.total_tokens
-            
-            # Run synthesizer with task-specific prompt if available
-            synth_prompt = get_agent_prompt(block.synth_role or "Synthesizer", task_name)
-            synth_input = f"""Combine the following outputs from multiple specialists into a coherent final result:
-
-{chr(10).join(inner_outputs)}
-
-Original task: {current_input}
-
-Provide the synthesized final output."""
-            
-            result = await client.generate(
-                system_prompt=synth_prompt,
-                user_content=synth_input
-            )
-            
-            if result.status != "COMPLETED":
-                raise Exception(f"Synthesizer failed: {result.error}")
-            
-            current_input = result.content
-            total_tokens += result.total_tokens
-    
-    # Run extractor if enabled
-    if use_extractor:
-        extractor_prompt = get_extractor_prompt(task_name)
-        result = await client.generate(
-            system_prompt=extractor_prompt,
-            user_content=current_input
+    pending = []
+    # submit first role
+    if roles:
+        prompt = get_agent_prompt(roles[0], task_name)
+        job_id = await client.submit_job(
+            messages=[
+                {"role": "system", "content": prompt},
+                {"role": "user", "content": current_input},
+            ]
         )
-        
-        if result.status == "COMPLETED":
-            current_input = result.content
-            total_tokens += result.total_tokens
-    
-    return current_input, total_tokens, time.time() - start_time
+        pending.append({"job_id": job_id, "stage": 0, "is_extractor": False})
+    else:
+        # no roles, go straight to extractor
+        if use_extractor:
+            extractor_prompt = get_extractor_prompt(task_name)
+            job_id = await client.submit_job(
+                messages=[
+                    {"role": "system", "content": extractor_prompt},
+                    {"role": "user", "content": current_input},
+                ]
+            )
+            pending.append({"job_id": job_id, "stage": 0, "is_extractor": True})
+        else:
+            return current_input, total_tokens, time.time() - start_time, None
+
+    # Poll loop
+    while pending:
+        next_pending = []
+        for item in pending:
+            res = await client.poll_job_once(item["job_id"], start_time)
+            if res is None:
+                next_pending.append(item)
+                continue
+            if res.status != "COMPLETED":
+                error = res.error or f"Job failed with status {res.status}"
+                continue
+
+            total_tokens += res.total_tokens
+
+            if item["is_extractor"]:
+                current_input = res.content
+                # extractor is final
+                continue
+
+            # regular agent
+            current_input = res.content
+            next_stage = item["stage"] + 1
+            if next_stage < len(roles):
+                prompt = get_agent_prompt(roles[next_stage], task_name)
+                job_id = await client.submit_job(
+                    messages=[
+                        {"role": "system", "content": prompt},
+                        {"role": "user", "content": current_input},
+                    ]
+                )
+                next_pending.append({"job_id": job_id, "stage": next_stage, "is_extractor": False})
+            else:
+                # finished agents, maybe extractor
+                if use_extractor:
+                    extractor_prompt = get_extractor_prompt(task_name)
+                    job_id = await client.submit_job(
+                        messages=[
+                            {"role": "system", "content": extractor_prompt},
+                            {"role": "user", "content": current_input},
+                        ]
+                    )
+                    next_pending.append({"job_id": job_id, "stage": next_stage, "is_extractor": True})
+                # else done
+
+        pending = next_pending
+        if pending:
+            await asyncio.sleep(poll_interval)
+
+    return current_input, total_tokens, time.time() - start_time, error
 
 
 async def evaluate_workflow_parallel(
@@ -398,20 +388,21 @@ async def evaluate_workflow_parallel(
     start_time = time.time()
     client = state.runpod_client
     
-    # Run all problems in parallel
-    tasks = [
-        run_workflow_on_problem(
-            problem,
-            workflow.blocks,
-            workflow.task_name,
-            workflow.use_extractor,
-            client
+    # Run all problems in parallel using fire-and-poll
+    tasks = []
+    for problem in problems:
+        tasks.append(
+            run_workflow_on_problem(
+                problem,
+                workflow.blocks,
+                workflow.task_name,
+                workflow.use_extractor,
+                client
+            )
         )
-        for problem in problems
-    ]
-    
+
     results = await asyncio.gather(*tasks, return_exceptions=True)
-    
+
     # Process results
     problem_results = []
     num_correct = 0
@@ -427,24 +418,31 @@ async def evaluate_workflow_parallel(
                 error=str(result)[:200]
             ))
         else:
-            output, tokens, exec_time = result
+            output, tokens, exec_time, err = result
             total_tokens += tokens
-            
-            # Evaluate correctness
-            try:
-                is_correct = dataset.evaluate(output, problem)
-            except Exception as e:
-                is_correct = False
-            
-            if is_correct:
-                num_correct += 1
-            
-            problem_results.append(ProblemResult(
-                problem_id=problem.id,
-                correct=is_correct,
-                tokens=tokens,
-                time=exec_time
-            ))
+            if err:
+                problem_results.append(ProblemResult(
+                    problem_id=problem.id,
+                    correct=False,
+                    tokens=tokens,
+                    time=exec_time,
+                    error=str(err)[:200]
+                ))
+            else:
+                try:
+                    is_correct = dataset.evaluate(output, problem)
+                except Exception as e:
+                    is_correct = False
+                    err = str(e)
+                if is_correct:
+                    num_correct += 1
+                problem_results.append(ProblemResult(
+                    problem_id=problem.id,
+                    correct=is_correct,
+                    tokens=tokens,
+                    time=exec_time,
+                    error=str(err)[:200] if err else None
+                ))
     
     total_time = time.time() - start_time
     
@@ -469,6 +467,21 @@ async def health_check():
         "datasets": list(state.datasets.keys()),
         "runpod_connected": state.runpod_client is not None
     }
+
+
+@app.get("/stats")
+async def get_runpod_stats():
+    """Get RunPod client statistics for monitoring throughput."""
+    if state.runpod_client:
+        stats = state.runpod_client.get_stats()
+        return {
+            "active_jobs": stats["active_jobs"],
+            "total_submitted": stats["total_submitted"],
+            "total_completed": stats["total_completed"],
+            "total_failed": stats["total_failed"],
+            "peak_active": stats["peak_active"],
+        }
+    return {"error": "RunPod client not initialized"}
 
 
 @app.get("/datasets")

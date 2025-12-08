@@ -47,6 +47,9 @@ def roles_to_blocks(roles: List[str]) -> List[BlockConfig]:
     return [BlockConfig(type="agent", role=role) for role in roles]
 
 
+MAX_PROBLEMS_PER_REQUEST = 10**9  # effectively no client chunking
+
+
 class EvaluationClient:
     """
     Client for the evaluation server.
@@ -72,13 +75,25 @@ class EvaluationClient:
     
     def _get_sync_client(self) -> httpx.Client:
         """Get a sync HTTP client."""
-        return httpx.Client(timeout=httpx.Timeout(300.0, connect=10.0))
+        return httpx.Client(
+            timeout=httpx.Timeout(600.0, connect=20.0),
+            limits=httpx.Limits(
+                max_connections=500,
+                max_keepalive_connections=200,
+                keepalive_expiry=60.0,
+            ),
+        )
     
     async def _get_async_client(self) -> httpx.AsyncClient:
         """Get or create async HTTP client."""
         if self._async_client is None or self._async_client.is_closed:
             self._async_client = httpx.AsyncClient(
-                timeout=httpx.Timeout(300.0, connect=10.0)
+                timeout=httpx.Timeout(600.0, connect=20.0),
+                limits=httpx.Limits(
+                    max_connections=1000,
+                    max_keepalive_connections=400,
+                    keepalive_expiry=60.0,
+                ),
             )
         return self._async_client
     
@@ -419,7 +434,11 @@ class EvaluationClient:
         use_extractor: bool = True,
         seed: Optional[int] = None
     ) -> List[EvalResult]:
-        """Async version of evaluate_batch."""
+        """
+        Async version of evaluate_batch with chunking to avoid oversized single requests.
+        Client no longer chunks; server is responsible for queuing.
+        """
+
         payload = {
             "workflows": [
                 {
