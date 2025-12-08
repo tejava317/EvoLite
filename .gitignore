@@ -8,3 +8,6 @@ __pycache__/
 
 # graph file
 graph
+
+# result file
+src/ga/result.txt

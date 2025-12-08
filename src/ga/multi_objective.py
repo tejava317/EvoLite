@@ -28,8 +28,9 @@ def evaluate_objectives(workflow):
 
 
 # dominate function
-def dominates(a, b):
-    return np.all(a <= b) and np.any(a < b)
+# The first element is token, and the second element is pass@k value.
+# We want to minimize the token value while maximing the pass@k value.
+def dominates(a, b): return np.all(a <= b) and np.any(a < b)
 
 # Non-dominated sort.
 def non_dominated_sort(pop_objs):
@@ -89,7 +90,8 @@ def crowding_distance(pop_objs, front):
 def ngsa_select(population, num_select):
     
     workflows = [entry["workflow"] for entry in population]
-    objs = np.array([entry["fitness"] for entry in population])
+    #  Note that the pass@k value is negated. 
+    objs = np.array([[entry["fitness"]["token"], -1 * entry["fitness"]["pass_at_k"]] for entry in population])
 
     fronts = non_dominated_sort(objs)
 
@@ -108,15 +110,18 @@ def ngsa_select(population, num_select):
     return [population[i] for i in selected_indices]
 
 
-def plot_pareto(pop_objs, file_name="front"):
+def plot_pareto(population, file_name="front"):
 
     save_dir = "graph"
     os.makedirs(save_dir, exist_ok=True)
 
+    pass_at_k_array = np.array([entry["fitness"]["pass_at_k"] for entry in population])
+    token_array = np.array([entry["fitness"]["token"] for entry in population])
+
     plt.figure(figsize=(7, 5))
-    plt.scatter(pop_objs[:, 0], pop_objs[:, 1], c='red', s=40)
-    plt.xlabel("Objective 1 (pass@k, negated)")
-    plt.ylabel("Objective 2 (token penalty)")
+    plt.scatter(token_array, pass_at_k_array, c='red', s=40)
+    plt.xlabel("Objective 1 (total_tokens)")
+    plt.ylabel("Objective 2 (pass@k)")
     plt.title("Pareto Front")
     plt.grid(True)
 
