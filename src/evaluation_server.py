@@ -13,6 +13,9 @@ Run with:
 
 import asyncio
 import time
+import os
+import json
+import uuid
 from typing import Optional, List, Union
 from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
@@ -240,6 +243,34 @@ def expand_blocks_to_roles(blocks: List[BlockConfig], client: RunPodAsyncClient 
     return roles
 
 
+async def log_agent_output(request_id: str, record: dict):
+    """Persist agent output locally as JSON array file (server-side only)."""
+    def _write():
+        req_ts = record.get("request_timestamp") or record.get("ts") or ""
+        # sanitize and default
+        if not req_ts:
+            req_ts = time.strftime("%Y%m%dT%H%M%S", time.gmtime())
+        dir_path = os.path.join("logs", "agent_runs", req_ts)
+        path = os.path.join(dir_path, f"{request_id}.json")
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        # append into an array file; create if not exists
+        if not os.path.exists(path):
+            with open(path, "w", encoding="utf-8") as f:
+                f.write("[]")
+        # load existing
+        with open(path, "r", encoding="utf-8") as f:
+            try:
+                data = json.load(f)
+                if not isinstance(data, list):
+                    data = []
+            except Exception:
+                data = []
+        data.append(record)
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+    await asyncio.to_thread(_write)
+
+
 async def expand_composite_block_async(
     block: BlockConfig,
     client: RunPodAsyncClient,
@@ -285,6 +316,8 @@ async def run_workflow_on_problem(
     use_extractor: bool,
     client: RunPodAsyncClient,
     poll_interval: float = 0.01,
+    request_id: str = "",
+    request_ts: str = "",
 ) -> tuple[str, int, float, str]:
     """
     Run a BlockWorkflow on a single problem using fire-and-poll (submit all jobs, poll asynchronously).
@@ -309,7 +342,7 @@ async def run_workflow_on_problem(
                 {"role": "user", "content": current_input},
             ]
         )
-        pending.append({"job_id": job_id, "stage": 0, "is_extractor": False})
+        pending.append({"job_id": job_id, "stage": 0, "is_extractor": False, "role": roles[0]})
     else:
         # no roles, go straight to extractor
         if use_extractor:
@@ -334,17 +367,56 @@ async def run_workflow_on_problem(
                 continue
             if res.status != "COMPLETED":
                 error = res.error or f"Job failed with status {res.status}"
+                await log_agent_output(request_id, {
+                    "problem_id": problem.id,
+                    "task": task_name,
+                    "stage": item["stage"],
+                    "role": item.get("role"),
+                    "is_extractor": item["is_extractor"],
+                    "status": res.status,
+                    "error": res.error,
+                    "content": "",
+                    "tokens": 0,
+                    "elapsed": res.execution_time,
+                    "request_timestamp": request_ts,
+                })
                 continue
 
             total_tokens += res.total_tokens
 
             if item["is_extractor"]:
                 current_input = res.content
+                await log_agent_output(request_id, {
+                    "problem_id": problem.id,
+                    "task": task_name,
+                    "stage": item["stage"],
+                    "role": "extractor",
+                    "is_extractor": True,
+                    "status": res.status,
+                    "error": None,
+                    "content": res.content,
+                    "tokens": res.total_tokens,
+                    "elapsed": res.execution_time,
+                    "request_timestamp": request_ts,
+                })
                 # extractor is final
                 continue
 
             # regular agent
             current_input = res.content
+            await log_agent_output(request_id, {
+                "problem_id": problem.id,
+                "task": task_name,
+                "stage": item["stage"],
+                "role": item.get("role"),
+                "is_extractor": False,
+                "status": res.status,
+                "error": None,
+                "content": res.content,
+                "tokens": res.total_tokens,
+                "elapsed": res.execution_time,
+                "request_timestamp": request_ts,
+            })
             next_stage = item["stage"] + 1
             if next_stage < len(roles):
                 prompt = get_agent_prompt(roles[next_stage], task_name)
@@ -354,7 +426,7 @@ async def run_workflow_on_problem(
                         {"role": "user", "content": current_input},
                     ]
                 )
-                next_pending.append({"job_id": job_id, "stage": next_stage, "is_extractor": False})
+                next_pending.append({"job_id": job_id, "stage": next_stage, "is_extractor": False, "role": roles[next_stage]})
             else:
                 # finished agents, maybe extractor
                 if use_extractor:
@@ -378,7 +450,9 @@ async def run_workflow_on_problem(
 async def evaluate_workflow_parallel(
     workflow: WorkflowConfig,
     problems: List[Problem],
-    dataset
+    dataset,
+    request_id: str,
+    request_ts: str,
 ) -> EvaluateResponse:
     """
     Evaluate a BlockWorkflow on multiple problems in parallel.
@@ -397,7 +471,9 @@ async def evaluate_workflow_parallel(
                 workflow.blocks,
                 workflow.task_name,
                 workflow.use_extractor,
-                client
+                client,
+                request_id=request_id,
+                request_ts=request_ts,
             )
         )
 
@@ -507,8 +583,9 @@ async def evaluate_workflow(request: EvaluateRequest):
     
     dataset = state.datasets[task_name]
     problems = dataset.sample(request.num_problems, seed=request.seed)
-    
-    return await evaluate_workflow_parallel(request.workflow, problems, dataset)
+    request_id = str(uuid.uuid4())
+    request_ts = time.strftime("%Y%m%dT%H%M%S", time.gmtime())
+    return await evaluate_workflow_parallel(request.workflow, problems, dataset, request_id=request_id, request_ts=request_ts)
 
 
 @app.post("/evaluate/simple", response_model=EvaluateResponse)
@@ -539,8 +616,9 @@ async def evaluate_simple(request: SimpleEvaluateRequest):
     
     dataset = state.datasets[task_name]
     problems = dataset.sample(request.num_problems, seed=request.seed)
-    
-    return await evaluate_workflow_parallel(workflow, problems, dataset)
+    request_id = str(uuid.uuid4())
+    request_ts = time.strftime("%Y%m%dT%H%M%S", time.gmtime())
+    return await evaluate_workflow_parallel(workflow, problems, dataset, request_id=request_id, request_ts=request_ts)
 
 
 @app.post("/evaluate/batch")
@@ -560,11 +638,13 @@ async def evaluate_batch(request: BatchEvaluateRequest):
     
     dataset = state.datasets[task_name]
     problems = dataset.sample(request.num_problems, seed=request.seed)
+    batch_id = str(uuid.uuid4())
+    request_ts = time.strftime("%Y%m%dT%H%M%S", time.gmtime())
     
     # Evaluate all workflows in parallel
     tasks = [
-        evaluate_workflow_parallel(wf, problems, dataset)
-        for wf in request.workflows
+        evaluate_workflow_parallel(wf, problems, dataset, request_id=f"{batch_id}-{idx}", request_ts=request_ts)
+        for idx, wf in enumerate(request.workflows)
     ]
     
     results = await asyncio.gather(*tasks, return_exceptions=True)

@@ -11,3 +11,4 @@ graph
 
 # result file
 src/ga/result.txt
+logs/
