@@ -123,7 +123,7 @@ async def lifespan(app: FastAPI):
         default_temperature=0.1,
         default_max_tokens=2000,
         poll_interval=0.3,
-        max_poll_time=600,  # 10 minutes timeout window
+        max_poll_time=3600,  # 1 hour timeout window
         enable_monitoring=True,
     )
     print("✓ RunPod client initialized (monitoring enabled)")
