@@ -19,7 +19,9 @@ from dataclasses import dataclass
 from openai import OpenAI
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import time
+from dotenv import load_dotenv
 
+load_dotenv()
 
 # ============== Configuration ==============
 
@@ -255,6 +257,8 @@ All agents MUST output in this exact format:
 {The exact original problem - copied verbatim}
 [WORK]
 {Detailed analysis - NOT passed to next agent}
+[COMMENT]
+{Brief notes for next agent: key insights, edge cases, warnings (1-3 sentences)}
 [ANSWER]
 {Concrete output passed forward}
 ---END STRUCTURED OUTPUT---
@@ -262,9 +266,10 @@ All agents MUST output in this exact format:
 CRITICAL REQUIREMENTS:
 1. The agent must ALWAYS copy the [PROBLEM] section verbatim from input
 2. The agent can do detailed work in [WORK] (logged but not passed forward)
-3. The agent's concrete contribution goes in [ANSWER]
-4. The prompt should be task-agnostic (works for code, math, output prediction)
-5. Be concise (100-200 words, excluding the format instructions)
+3. The agent should add brief notes in [COMMENT] (passed to next agent)
+4. The agent's concrete contribution goes in [ANSWER]
+5. The prompt should be task-agnostic (works for code, math, output prediction)
+6. Be concise (100-200 words, excluding the format instructions)
 
 Generate a professional, effective system prompt for the agent."""
 
@@ -275,8 +280,8 @@ RESPONSIBILITY: {responsibility}
 
 The prompt should:
 1. Define the agent's identity and role clearly (1-2 sentences)
-2. Explain what the agent does with [PROBLEM] and [ANSWER] from input
-3. Explain what the agent contributes to [ANSWER]
+2. Explain what the agent does with [PROBLEM], [COMMENT], and [ANSWER] from input
+3. Explain what the agent contributes to [COMMENT] (brief notes) and [ANSWER] (solution)
 4. MUST include the structured output format requirement
 5. Be task-agnostic (works for any benchmark)
 6. Be concise - the format instructions will be appended separately
@@ -343,13 +348,14 @@ class GPTPromptGenerator:
 
 Your responsibility: {responsibility}
 
-You will receive input containing [PROBLEM] and [ANSWER] sections from the previous agent.
+You will receive input containing [PROBLEM], [COMMENT], and [ANSWER] sections from the previous agent.
 
 YOUR TASK:
 1. Read the [PROBLEM] section - this is the original task (DO NOT modify it)
-2. Consider the [ANSWER] from previous agents
+2. Consider the [COMMENT] and [ANSWER] from previous agents
 3. Do your specific work based on your role
-4. Produce your contribution in the [ANSWER] section"""
+4. Add brief notes in [COMMENT] for the next agent
+5. Produce your contribution in the [ANSWER] section"""
     
     def generate_all_prompts(self, max_workers: int = 5) -> dict:
         """Generate prompts for all agents using parallel API calls."""
