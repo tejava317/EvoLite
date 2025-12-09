@@ -68,7 +68,7 @@ def load_task_descriptions():
 TASK_DESCRIPTIONS = load_task_descriptions()
 
 # Role description 
-ROLE_DESCRIPTIONS_PATH = PROJECT_ROOT / "configs" / "role.yaml"
+ROLE_DESCRIPTIONS_PATH = PROJECT_ROOT / "configs" / "generated_prompts.yaml"
 
 def load_role_descriptions():
     if not ROLE_DESCRIPTIONS_PATH.exists():
@@ -77,7 +77,7 @@ def load_role_descriptions():
     with open(ROLE_DESCRIPTIONS_PATH, 'r', encoding='utf-8') as f:
         role_descriptions = yaml.safe_load(f)
     
-    return role_descriptions
+    return list(role_descriptions["agents"].keys())
 
 ROLE_DESCRIPTIONS = load_role_descriptions()
 
@@ -164,3 +164,5 @@ def get_task_prompts(task_name: str) -> dict:
         Dictionary of role -> prompt mappings
     """
     return INITIAL_PROMPTS.get(task_name, {})
+
+print(ROLE_DESCRIPTIONS)
