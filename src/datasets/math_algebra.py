@@ -7,49 +7,68 @@ import re
 
 class MathAlgebraDataset(BaseDataset):
     """
-    Hendrycks MATH dataset loader (algebra subset).
+    Hendrycks MATH dataset loader (all categories, level 5 only).
     
-    Uses EleutherAI/hendrycks_math with the algebra configuration.
+    Uses EleutherAI/hendrycks_math with all configurations.
     Each problem includes a question and a solution with a boxed answer.
+    Filters to only Level 5 (hardest) problems.
     """
+    
+    # All available categories in the MATH dataset
+    CATEGORIES = [
+        "algebra",
+        "counting_and_probability", 
+        "geometry",
+        "intermediate_algebra",
+        "number_theory",
+        "prealgebra",
+        "precalculus",
+    ]
     
     def __init__(self, split: str = "test"):
         super().__init__(split)
         self.dataset_name = "EleutherAI/hendrycks_math"
-        self.config_name = "algebra"
     
     def load(self) -> None:
-        """Load the MATH algebra dataset from HuggingFace."""
+        """Load the MATH dataset (all categories, level 5 only) from HuggingFace."""
         if self._loaded:
             return
         
-        ds = load_dataset(self.dataset_name, self.config_name)
-        
-        split_data = ds[self.split]
-        
-        for idx, item in enumerate(split_data):
-            # Build the prompt from the problem
-            prompt = self._build_prompt(item)
+        idx = 0
+        for category in self.CATEGORIES:
+            ds = load_dataset(self.dataset_name, category)
+            split_data = ds[self.split]
             
-            # Extract the boxed answer from the solution
-            answer = self._extract_boxed_answer(item["solution"])
-            
-            # Ground truth is the extracted answer
-            ground_truth = {
-                "answer": answer,
-                "full_solution": item["solution"],
-            }
-            
-            problem = Problem(
-                id=f"math_algebra_{idx}",
-                prompt=prompt,
-                ground_truth=ground_truth,
-                metadata={
-                    "level": item.get("level", ""),
-                    "type": item.get("type", "Algebra"),
+            for item in split_data:
+                # Filter for Level 5 only
+                level = item.get("level", "")
+                if level != "Level 5":
+                    continue
+                
+                # Build the prompt from the problem
+                prompt = self._build_prompt(item)
+                
+                # Extract the boxed answer from the solution
+                answer = self._extract_boxed_answer(item["solution"])
+                
+                # Ground truth is the extracted answer
+                ground_truth = {
+                    "answer": answer,
+                    "full_solution": item["solution"],
                 }
-            )
-            self.problems.append(problem)
+                
+                problem = Problem(
+                    id=f"math_{category}_{idx}",
+                    prompt=prompt,
+                    ground_truth=ground_truth,
+                    metadata={
+                        "level": level,
+                        "type": item.get("type", category),
+                        "category": category,
+                    }
+                )
+                self.problems.append(problem)
+                idx += 1
         
         self._loaded = True
     
@@ -184,16 +203,26 @@ Show your work step by step, then provide your final answer in \\boxed{{}} forma
 
 if __name__ == "__main__":
     # Test the dataset loader
-    print("Loading MATH algebra dataset...")
+    print("Loading MATH dataset (all categories, level 5 only)...")
     dataset = MathAlgebraDataset(split="test")
     dataset.load()
     
-    print(f"Loaded {len(dataset)} problems")
+    print(f"Loaded {len(dataset)} Level 5 problems")
+    
+    # Count problems per category
+    categories = {}
+    for p in dataset.problems:
+        cat = p.metadata.get("category", "unknown")
+        categories[cat] = categories.get(cat, 0) + 1
+    print(f"\nProblems per category:")
+    for cat, count in sorted(categories.items()):
+        print(f"  {cat}: {count}")
     
     # Show first problem
     problem = dataset[0]
     print(f"\nFirst problem:")
     print(f"ID: {problem.id}")
+    print(f"Category: {problem.metadata['category']}")
     print(f"Prompt: {problem.prompt[:300]}...")
     print(f"Expected answer: {problem.ground_truth['answer']}")
     print(f"Level: {problem.metadata['level']}")
