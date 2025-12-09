@@ -7,7 +7,7 @@ from src.agents.agent import Agent
 from src.agents.workflow import Workflow
 
 # Role name
-ROLE_LIST = [role["name"] for role in ROLE_DESCRIPTIONS]
+ROLE_LIST = ROLE_DESCRIPTIONS
 
 # From the agent list, select one random agent.
 def random_agent() -> Agent:
@@ -110,9 +110,9 @@ def ngsa_select(population, num_select):
     return [population[i] for i in selected_indices]
 
 
-def plot_pareto(population, file_name="front"):
+def plot_pareto(population, file_name="front", log_x = True, log_y = False):
 
-    save_dir = "graph"
+    save_dir = "src/ga/graph"
     os.makedirs(save_dir, exist_ok=True)
 
     pass_at_k_array = np.array([entry["fitness"]["pass_at_k"] for entry in population])
@@ -124,6 +124,12 @@ def plot_pareto(population, file_name="front"):
     plt.ylabel("Objective 2 (pass@k)")
     plt.title("Pareto Front")
     plt.grid(True)
+
+    # Apply log scale
+    if log_x:
+        plt.xscale("log")
+    if log_y:
+        plt.yscale("log")
 
     save_path = os.path.join(save_dir, f"{file_name}.png")
     plt.savefig(save_path, dpi=300, bbox_inches="tight")

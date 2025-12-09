@@ -6,9 +6,12 @@ __pycache__/
 *.py[cod]
 *$py.class
 
-# graph file
+# file
 graph
+checkpoints
+nohup.out
 
 # result file
-src/ga/result.txt
+src/ga/result
+src/ga/checkpoints
 logs/
