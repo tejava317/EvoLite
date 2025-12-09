@@ -1,0 +1,1029 @@
+Using RunPod API (endpoint: r60j6no0elbjw7)
+
+============================================================
+Starting Genetic Algorithm
+Task: MBPP
+Workflow type: block
+Population size: 100
+Generations: 30
+Evaluation: Batch
+Using extractor: True
+============================================================
+
+Initializing population...
+Generation   0 | Best: 0.0000 | Avg: 0.0000
+Generation   1 | Best: 0.0000 | Avg: 0.0000
+[Saved] Pareto front saved to: graph/generation_async_2.png
+Generation   2 | Best: 0.5000 | Avg: 0.0833
+Generation   3 | Best: 0.5667 | Avg: 0.1140
+[Saved] Pareto front saved to: graph/generation_async_4.png
+Generation   4 | Best: 0.5667 | Avg: 0.1113
+
+Workflow roles: ['UI Designer', 'DevOps Lead', 'Documentation Agent', 'Test Automation Engineer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['DevOps Lead', 'Product Owner', 'Back-end Developer', 'Performance Engineer', 'Team Lead'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Post-mortem Analyst', 'UX Research Lead'], pass@k: 0.5666666666666667, total_tokens: 55751
+
+Workflow roles: ['Technical Writer', 'Back-end Developer', 'Full-stack Developer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Requirement Engineer'], pass@k: 0.5333333333333333, total_tokens: 31042
+
+Workflow roles: ['Back-end Developer', 'UX Researcher', 'Release Coordinator', 'Deployment Agent'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['QA Engineer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Security Manager', 'Configuration Manager', 'Release Coordinator'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Requirement Engineer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Back-end Developer', 'Product Owner'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Infrastructure Architect', 'Technical Lead', 'Deployment Agent'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['UI Designer', 'Security Architect', 'Requirement Engineer', 'Product Owner', 'Code Generation Agent'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Code Generation Agent', 'Business Analyst', 'UI Designer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Task Refinement Agent', 'Task Parsing Agent', 'Support Engineer', 'DevOps Security Engineer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Technical Lead', 'Documentation Manager', 'DevOps Lead'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Test Automation Engineer', 'Release Coordinator', 'Deployment Agent'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Data Architect', 'DevOps Security Engineer', 'UX Research Lead', 'Test Design Agent'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Requirement Engineer', 'Alert/Response Agent', 'Code Review Agent'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Integration Agent', 'Code Review Agent', 'Full-stack Developer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['UX Researcher', 'Scrum Master'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Compliance Officer', 'Full-stack Developer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Back-end Developer', 'Code Review Agent', 'Business Analyst', 'Stakeholder', 'Security Engineer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Test Automation Engineer', 'Security Manager'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Back-end Developer', 'Alert/Response Agent', 'Data Privacy Officer', 'Requirement Engineer', 'Product Owner'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Compliance Officer', 'Release Manager', 'Customer Support'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Code Refinement Agent', 'Task Refinement Agent', 'Performance Engineer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Release Planner', 'Security Architect', 'Data Privacy Officer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['QA Lead'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Product Owner', 'Team Lead', 'DevOps Security Engineer', 'Back-end Developer', 'Front-end Developer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Customer Support', 'Security Architect', 'Test Execution Agent', 'DevOps Engineer', 'Release Coordinator'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Alert/Response Agent', 'Monitoring Agent'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Infrastructure Manager'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Back-end Developer', 'Release Manager', 'Deployment Agent', 'Security Engineer', 'Task Refinement Agent'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['UI Designer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['QA Lead', 'Customer Support', 'Performance Engineer', 'Software Architect'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Code Review Agent', 'Project Manager', 'Monitoring Agent'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Team Lead'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Security Officer', 'QA Lead'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Security Officer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['DevOps Engineer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Documentation Manager', 'Math Answer Extractor', 'UX Researcher'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Business Analyst', 'DevOps Security Engineer', 'UI Designer', 'Customer Support', 'Data Privacy Officer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Security Manager', 'Requirement Engineer', 'Configuration Manager'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Technical Lead'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Release Manager', 'UX Designer', 'Software Architect', 'Security Engineer', 'UI Designer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Infrastructure Architect', 'UX Research Lead'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['QA Lead'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Configuration Manager', 'Data Architect'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Back-end Developer', 'Stakeholder', 'Back-end Developer', 'Performance Engineer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Security Engineer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['UX Research Lead', 'Infrastructure Architect'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Software Architect', 'UX Research Lead', 'Release Planner', 'Documentation Agent'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Monitoring Agent', 'Release Coordinator'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Documentation Manager', 'UX Researcher', 'Security Manager', 'Security Officer', 'Requirement Engineer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Team Lead', 'Deployment Agent', 'Security Engineer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Scrum Master', 'UX Designer', 'Task Parsing Agent', 'Test Automation Engineer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Code Refinement Agent', 'Back-end Developer', 'Task Refinement Agent', 'Math Answer Extractor'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Post-mortem Analyst', 'UX Research Lead'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Code Answer Extractor', 'Stakeholder', 'DevOps Engineer', 'DevOps Lead'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Release Manager', 'Product Owner', 'Documentation Manager', 'Support Engineer', 'UX Designer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Stakeholder', 'Security Engineer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Project Manager', 'Release Manager'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Code Generation Agent', 'Data Privacy Officer', 'Test Automation Engineer', 'Technical Writer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Test Design Agent', 'Code Refinement Agent', 'Security Manager'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Back-end Developer', 'Release Coordinator', 'Post-mortem Analyst', 'Code Review Agent', 'Security Officer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Security Engineer', 'Monitoring Agent', 'UX Research Lead', 'QA Lead', 'Math Answer Extractor'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Test Design Agent', 'Support Engineer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Security Officer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Test Execution Agent', 'Data Architect', 'Code Refinement Agent', 'Monitoring Agent', 'QA Engineer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Performance Engineer', 'Technical Writer', 'Code Generation Agent', 'Security Manager', 'Product Owner'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Math Answer Extractor', 'Technical Lead', 'QA Lead', 'Compliance Officer', 'QA Engineer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Test Automation Engineer', 'Release Coordinator', 'Test Design Agent', 'Code Answer Extractor', 'Performance Engineer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Code Refinement Agent', 'Test Automation Engineer', 'Requirement Engineer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Requirement Engineer', 'Infrastructure Architect'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Full-stack Developer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Code Generation Agent', 'Business Analyst', 'Back-end Developer', 'Software Architect'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Technical Lead'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['DevOps Lead', 'Code Answer Extractor', 'Project Manager', 'Security Officer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Team Lead'], pass@k: 0.5, total_tokens: 30024
+
+Workflow roles: ['Back-end Developer', 'Security Architect', 'Requirement Engineer', 'Product Owner', 'Code Generation Agent'], pass@k: 0.5666666666666667, total_tokens: 125112
+Generation   5 | Best: 0.6000 | Avg: 0.1013
+[Saved] Pareto front saved to: graph/generation_async_6.png
+Generation   6 | Best: 0.6333 | Avg: 0.1157
+Generation   7 | Best: 0.6333 | Avg: 0.0913
+[Saved] Pareto front saved to: graph/generation_async_8.png
+Generation   8 | Best: 0.6333 | Avg: 0.0950
+Generation   9 | Best: 0.6333 | Avg: 0.1037
+[Saved] Pareto front saved to: graph/generation_async_10.png
+
+Workflow roles: ['UI Designer', 'DevOps Lead', 'Documentation Agent', 'Test Automation Engineer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['DevOps Lead', 'Product Owner', 'Back-end Developer', 'Performance Engineer', 'Team Lead'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Technical Writer', 'Back-end Developer', 'Full-stack Developer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Back-end Developer', 'UX Researcher', 'Release Coordinator', 'Deployment Agent'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['QA Engineer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Security Manager', 'Configuration Manager', 'Release Coordinator'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Requirement Engineer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Back-end Developer', 'Product Owner'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Infrastructure Architect', 'Technical Lead', 'Deployment Agent'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['UI Designer', 'Security Architect', 'Requirement Engineer', 'Product Owner', 'Code Generation Agent'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Code Generation Agent', 'Business Analyst', 'UI Designer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Task Refinement Agent', 'Task Parsing Agent', 'Support Engineer', 'DevOps Security Engineer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Technical Lead', 'Documentation Manager', 'DevOps Lead'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Test Automation Engineer', 'Release Coordinator', 'Deployment Agent'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Data Architect', 'DevOps Security Engineer', 'UX Research Lead', 'Test Design Agent'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Requirement Engineer', 'Alert/Response Agent', 'Code Review Agent'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Integration Agent', 'Code Review Agent', 'Full-stack Developer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['UX Researcher', 'Scrum Master'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Compliance Officer', 'Full-stack Developer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Back-end Developer', 'Code Review Agent', 'Business Analyst', 'Stakeholder', 'Security Engineer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Test Automation Engineer', 'Security Manager'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Back-end Developer', 'Alert/Response Agent', 'Data Privacy Officer', 'Requirement Engineer', 'Product Owner'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Compliance Officer', 'Release Manager', 'Customer Support'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Code Refinement Agent', 'Task Refinement Agent', 'Performance Engineer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Release Planner', 'Security Architect', 'Data Privacy Officer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['QA Lead'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Product Owner', 'Team Lead', 'DevOps Security Engineer', 'Back-end Developer', 'Front-end Developer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Customer Support', 'Security Architect', 'Test Execution Agent', 'DevOps Engineer', 'Release Coordinator'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Alert/Response Agent', 'Monitoring Agent'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Infrastructure Manager'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Back-end Developer', 'Release Manager', 'Deployment Agent', 'Security Engineer', 'Task Refinement Agent'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['UI Designer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['QA Lead', 'Customer Support', 'Performance Engineer', 'Software Architect'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Code Review Agent', 'Project Manager', 'Monitoring Agent'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Team Lead'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Security Officer', 'QA Lead'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Security Officer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['DevOps Engineer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Documentation Manager', 'Math Answer Extractor', 'UX Researcher'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Business Analyst', 'DevOps Security Engineer', 'UI Designer', 'Customer Support', 'Data Privacy Officer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Security Manager', 'Requirement Engineer', 'Configuration Manager'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Technical Lead'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Release Manager', 'UX Designer', 'Software Architect', 'Security Engineer', 'UI Designer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Infrastructure Architect', 'UX Research Lead'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['QA Lead'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Configuration Manager', 'Data Architect'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Back-end Developer', 'Stakeholder', 'Back-end Developer', 'Performance Engineer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Security Engineer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['UX Research Lead', 'Infrastructure Architect'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Software Architect', 'UX Research Lead', 'Release Planner', 'Documentation Agent'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Monitoring Agent', 'Release Coordinator'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Documentation Manager', 'UX Researcher', 'Security Manager', 'Security Officer', 'Requirement Engineer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Team Lead', 'Deployment Agent', 'Security Engineer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Scrum Master', 'UX Designer', 'Task Parsing Agent', 'Test Automation Engineer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Code Refinement Agent', 'Back-end Developer', 'Task Refinement Agent', 'Math Answer Extractor'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Post-mortem Analyst', 'UX Research Lead'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Code Answer Extractor', 'Stakeholder', 'DevOps Engineer', 'DevOps Lead'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Release Manager', 'Product Owner', 'Documentation Manager', 'Support Engineer', 'UX Designer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Stakeholder', 'Security Engineer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Project Manager', 'Release Manager'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Code Generation Agent', 'Data Privacy Officer', 'Test Automation Engineer', 'Technical Writer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Test Design Agent', 'Code Refinement Agent', 'Security Manager'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Back-end Developer', 'Release Coordinator', 'Post-mortem Analyst', 'Code Review Agent', 'Security Officer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Security Engineer', 'Monitoring Agent', 'UX Research Lead', 'QA Lead', 'Math Answer Extractor'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Test Design Agent', 'Support Engineer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Security Officer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Test Execution Agent', 'Data Architect', 'Code Refinement Agent', 'Monitoring Agent', 'QA Engineer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Performance Engineer', 'Technical Writer', 'Code Generation Agent', 'Security Manager', 'Product Owner'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Math Answer Extractor', 'Technical Lead', 'QA Lead', 'Compliance Officer', 'QA Engineer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Test Automation Engineer', 'Release Coordinator', 'Test Design Agent', 'Code Answer Extractor', 'Performance Engineer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Code Refinement Agent', 'Test Automation Engineer', 'Requirement Engineer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Requirement Engineer', 'Infrastructure Architect'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Full-stack Developer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Code Generation Agent', 'Business Analyst', 'Back-end Developer', 'Software Architect'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Technical Lead'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['DevOps Lead', 'Code Answer Extractor', 'Project Manager', 'Security Officer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Configuration Manager'], pass@k: 0.26666666666666666, total_tokens: 10732
+
+Workflow roles: ['Security Engineer'], pass@k: 0.6, total_tokens: 29063
+
+Workflow roles: ['UI Designer', 'DevOps Lead', 'Product Owner', 'Back-end Developer', 'Performance Engineer'], pass@k: 0.6333333333333333, total_tokens: 128249
+
+Workflow roles: ['Infrastructure Manager'], pass@k: 0.5, total_tokens: 27080
+Generation  10 | Best: 0.6333 | Avg: 0.0870
+Generation  11 | Best: 0.6333 | Avg: 0.1317
+[Saved] Pareto front saved to: graph/generation_async_12.png
+Generation  12 | Best: 0.6333 | Avg: 0.1227
+Generation  13 | Best: 0.6333 | Avg: 0.1040
+[Saved] Pareto front saved to: graph/generation_async_14.png
+Generation  14 | Best: 0.6333 | Avg: 0.0920
+
+Workflow roles: ['UI Designer', 'DevOps Lead', 'Documentation Agent', 'Test Automation Engineer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Full-stack Developer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Security Engineer'], pass@k: 0.6, total_tokens: 29063
+
+Workflow roles: ['Configuration Manager'], pass@k: 0.26666666666666666, total_tokens: 10732
+
+Workflow roles: ['Infrastructure Manager'], pass@k: 0.5, total_tokens: 27080
+
+Workflow roles: ['DevOps Lead', 'Code Answer Extractor', 'Project Manager', 'Security Officer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Infrastructure Architect', 'Technical Lead', 'Deployment Agent'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['DevOps Lead', 'Product Owner', 'Back-end Developer', 'Performance Engineer', 'Team Lead'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Technical Writer', 'Back-end Developer', 'Full-stack Developer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Back-end Developer', 'UX Researcher', 'Release Coordinator', 'Deployment Agent'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['QA Engineer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Security Manager', 'Configuration Manager', 'Release Coordinator'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Requirement Engineer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Back-end Developer', 'Product Owner'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Integration Agent', 'Code Review Agent', 'Full-stack Developer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['UX Researcher', 'Scrum Master'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Compliance Officer', 'Full-stack Developer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Back-end Developer', 'Code Review Agent', 'Business Analyst', 'Stakeholder', 'Security Engineer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Test Automation Engineer', 'Security Manager'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Back-end Developer', 'Alert/Response Agent', 'Data Privacy Officer', 'Requirement Engineer', 'Product Owner'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Compliance Officer', 'Release Manager', 'Customer Support'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Code Refinement Agent', 'Task Refinement Agent', 'Performance Engineer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Release Planner', 'Security Architect', 'Data Privacy Officer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['UI Designer', 'Security Architect', 'Requirement Engineer', 'Product Owner', 'Code Generation Agent'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Code Generation Agent', 'Business Analyst', 'UI Designer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Task Refinement Agent', 'Task Parsing Agent', 'Support Engineer', 'DevOps Security Engineer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Technical Lead', 'Documentation Manager', 'DevOps Lead'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Test Automation Engineer', 'Release Coordinator', 'Deployment Agent'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Data Architect', 'DevOps Security Engineer', 'UX Research Lead', 'Test Design Agent'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Requirement Engineer', 'Alert/Response Agent', 'Code Review Agent'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['QA Lead', 'Customer Support', 'Performance Engineer', 'Software Architect'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Code Review Agent', 'Project Manager', 'Monitoring Agent'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Team Lead'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Security Officer', 'QA Lead'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Security Officer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['DevOps Engineer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Documentation Manager', 'Math Answer Extractor', 'UX Researcher'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Business Analyst', 'DevOps Security Engineer', 'UI Designer', 'Customer Support', 'Data Privacy Officer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Security Manager', 'Requirement Engineer', 'Configuration Manager'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Technical Lead'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Release Manager', 'UX Designer', 'Software Architect', 'Security Engineer', 'UI Designer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Infrastructure Architect', 'UX Research Lead'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['QA Lead'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Configuration Manager', 'Data Architect'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Back-end Developer', 'Stakeholder', 'Back-end Developer', 'Performance Engineer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Security Engineer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['UX Research Lead', 'Infrastructure Architect'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Software Architect', 'UX Research Lead', 'Release Planner', 'Documentation Agent'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Monitoring Agent', 'Release Coordinator'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Documentation Manager', 'UX Researcher', 'Security Manager', 'Security Officer', 'Requirement Engineer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Team Lead', 'Deployment Agent', 'Security Engineer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Scrum Master', 'UX Designer', 'Task Parsing Agent', 'Test Automation Engineer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Code Refinement Agent', 'Back-end Developer', 'Task Refinement Agent', 'Math Answer Extractor'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Post-mortem Analyst', 'UX Research Lead'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Code Answer Extractor', 'Stakeholder', 'DevOps Engineer', 'DevOps Lead'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['QA Lead'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Product Owner', 'Team Lead', 'DevOps Security Engineer', 'Back-end Developer', 'Front-end Developer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Customer Support', 'Security Architect', 'Test Execution Agent', 'DevOps Engineer', 'Release Coordinator'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Alert/Response Agent', 'Monitoring Agent'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Infrastructure Manager'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Back-end Developer', 'Release Manager', 'Deployment Agent', 'Security Engineer', 'Task Refinement Agent'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['UI Designer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Security Engineer', 'Monitoring Agent', 'UX Research Lead', 'QA Lead', 'Math Answer Extractor'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Back-end Developer', 'Release Coordinator', 'Post-mortem Analyst', 'Code Review Agent', 'Security Officer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Test Design Agent', 'Code Refinement Agent', 'Security Manager'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Code Generation Agent', 'Data Privacy Officer', 'Test Automation Engineer', 'Technical Writer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Project Manager', 'Release Manager'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Stakeholder', 'Security Engineer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Release Manager', 'Product Owner', 'Documentation Manager', 'Support Engineer', 'UX Designer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Test Design Agent', 'Support Engineer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Requirement Engineer', 'Infrastructure Architect'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Code Refinement Agent', 'Test Automation Engineer', 'Requirement Engineer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Test Automation Engineer', 'Release Coordinator', 'Test Design Agent', 'Code Answer Extractor', 'Performance Engineer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Math Answer Extractor', 'Technical Lead', 'QA Lead', 'Compliance Officer', 'QA Engineer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Performance Engineer', 'Technical Writer', 'Code Generation Agent', 'Security Manager', 'Product Owner'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Test Execution Agent', 'Data Architect', 'Code Refinement Agent', 'Monitoring Agent', 'QA Engineer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Technical Lead'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Security Officer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Data Privacy Officer'], pass@k: 0.3333333333333333, total_tokens: 19799
+
+Workflow roles: ['Compliance Officer', 'Full-stack Developer'], pass@k: 0.6333333333333333, total_tokens: 53808
+Generation  15 | Best: 0.6333 | Avg: 0.1090
+[Saved] Pareto front saved to: graph/generation_async_16.png
+Generation  16 | Best: 0.6333 | Avg: 0.1317
+Generation  17 | Best: 0.6667 | Avg: 0.1327
+[Saved] Pareto front saved to: graph/generation_async_18.png
+Generation  18 | Best: 0.7000 | Avg: 0.1437
+Generation  19 | Best: 0.7000 | Avg: 0.1177
+[Saved] Pareto front saved to: graph/generation_async_20.png
+
+Workflow roles: ['UI Designer', 'DevOps Lead', 'Documentation Agent', 'Test Automation Engineer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Performance Engineer', 'Technical Writer', 'Code Generation Agent', 'Security Manager', 'Product Owner'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Technical Lead', 'Technical Lead'], pass@k: 0.7, total_tokens: 52736
+
+Workflow roles: ['Configuration Manager'], pass@k: 0.26666666666666666, total_tokens: 10732
+
+Workflow roles: ['Configuration Manager'], pass@k: 0.36666666666666664, total_tokens: 15994
+
+Workflow roles: ['Infrastructure Manager'], pass@k: 0.5, total_tokens: 27080
+
+Workflow roles: ['UI Designer'], pass@k: 0.6666666666666666, total_tokens: 29972
+
+Workflow roles: ['Full-stack Developer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Security Engineer'], pass@k: 0.6, total_tokens: 28715
+
+Workflow roles: ['Test Execution Agent', 'Data Architect', 'Code Refinement Agent', 'Monitoring Agent', 'QA Engineer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Infrastructure Architect'], pass@k: 0.6333333333333333, total_tokens: 29850
+
+Workflow roles: ['Back-end Developer', 'UX Researcher', 'Release Coordinator', 'Deployment Agent'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['DevOps Lead', 'Code Answer Extractor', 'Project Manager', 'Security Officer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Infrastructure Architect', 'Technical Lead', 'Deployment Agent'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['DevOps Lead', 'Product Owner', 'Back-end Developer', 'Performance Engineer', 'Team Lead'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Technical Writer', 'Back-end Developer', 'Full-stack Developer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Back-end Developer', 'Code Review Agent', 'Business Analyst', 'Stakeholder', 'Security Engineer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Test Automation Engineer', 'Security Manager'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Back-end Developer', 'Alert/Response Agent', 'Data Privacy Officer', 'Requirement Engineer', 'Product Owner'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Compliance Officer', 'Release Manager', 'Customer Support'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Code Refinement Agent', 'Task Refinement Agent', 'Performance Engineer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Release Planner', 'Security Architect', 'Data Privacy Officer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['UI Designer', 'Security Architect', 'Requirement Engineer', 'Product Owner', 'Code Generation Agent'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Code Generation Agent', 'Business Analyst', 'UI Designer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Task Refinement Agent', 'Task Parsing Agent', 'Support Engineer', 'DevOps Security Engineer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['QA Engineer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Security Manager', 'Configuration Manager', 'Release Coordinator'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Requirement Engineer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Back-end Developer', 'Product Owner'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Integration Agent', 'Code Review Agent', 'Full-stack Developer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['UX Researcher', 'Scrum Master'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Compliance Officer', 'Full-stack Developer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Security Officer', 'QA Lead'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Security Officer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['DevOps Engineer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Documentation Manager', 'Math Answer Extractor', 'UX Researcher'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Business Analyst', 'DevOps Security Engineer', 'UI Designer', 'Customer Support', 'Data Privacy Officer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Security Manager', 'Requirement Engineer', 'Configuration Manager'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Technical Lead'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Release Manager', 'UX Designer', 'Software Architect', 'Security Engineer', 'UI Designer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Infrastructure Architect', 'UX Research Lead'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['QA Lead'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Configuration Manager', 'Data Architect'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Back-end Developer', 'Stakeholder', 'Back-end Developer', 'Performance Engineer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Security Engineer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['UX Research Lead', 'Infrastructure Architect'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Software Architect', 'UX Research Lead', 'Release Planner', 'Documentation Agent'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Monitoring Agent', 'Release Coordinator'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Documentation Manager', 'UX Researcher', 'Security Manager', 'Security Officer', 'Requirement Engineer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Team Lead', 'Deployment Agent', 'Security Engineer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Scrum Master', 'UX Designer', 'Task Parsing Agent', 'Test Automation Engineer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Code Refinement Agent', 'Back-end Developer', 'Task Refinement Agent', 'Math Answer Extractor'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Post-mortem Analyst', 'UX Research Lead'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Code Answer Extractor', 'Stakeholder', 'DevOps Engineer', 'DevOps Lead'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['QA Lead'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Product Owner', 'Team Lead', 'DevOps Security Engineer', 'Back-end Developer', 'Front-end Developer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Customer Support', 'Security Architect', 'Test Execution Agent', 'DevOps Engineer', 'Release Coordinator'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Technical Lead', 'Documentation Manager', 'DevOps Lead'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Test Automation Engineer', 'Release Coordinator', 'Deployment Agent'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Data Architect', 'DevOps Security Engineer', 'UX Research Lead', 'Test Design Agent'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Requirement Engineer', 'Alert/Response Agent', 'Code Review Agent'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['QA Lead', 'Customer Support', 'Performance Engineer', 'Software Architect'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Code Review Agent', 'Project Manager', 'Monitoring Agent'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Team Lead'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Test Design Agent', 'Code Refinement Agent', 'Security Manager'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Back-end Developer', 'Release Coordinator', 'Post-mortem Analyst', 'Code Review Agent', 'Security Officer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Security Engineer', 'Monitoring Agent', 'UX Research Lead', 'QA Lead', 'Math Answer Extractor'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['UI Designer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Back-end Developer', 'Release Manager', 'Deployment Agent', 'Security Engineer', 'Task Refinement Agent'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Infrastructure Manager'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Alert/Response Agent', 'Monitoring Agent'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Code Generation Agent', 'Data Privacy Officer', 'Test Automation Engineer', 'Technical Writer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Test Automation Engineer', 'Release Coordinator', 'Test Design Agent', 'Code Answer Extractor', 'Performance Engineer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Code Refinement Agent', 'Test Automation Engineer', 'Requirement Engineer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Requirement Engineer', 'Infrastructure Architect'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Test Design Agent', 'Support Engineer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Release Manager', 'Product Owner', 'Documentation Manager', 'Support Engineer', 'UX Designer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Math Answer Extractor', 'Technical Lead', 'QA Lead', 'Compliance Officer', 'QA Engineer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Stakeholder', 'Security Engineer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Project Manager', 'Release Manager'], pass@k: 0.0, total_tokens: 0
+Generation  20 | Best: 0.7000 | Avg: 0.1053
+Generation  21 | Best: 0.7000 | Avg: 0.1253
+[Saved] Pareto front saved to: graph/generation_async_22.png
+Generation  22 | Best: 0.7000 | Avg: 0.1340
+Generation  23 | Best: 0.7000 | Avg: 0.1327
+[Saved] Pareto front saved to: graph/generation_async_24.png
+Generation  24 | Best: 0.7000 | Avg: 0.1400
+
+Workflow roles: ['UI Designer', 'DevOps Lead', 'Documentation Agent', 'Test Automation Engineer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Technical Lead', 'Technical Lead'], pass@k: 0.7, total_tokens: 52736
+
+Workflow roles: ['Project Manager', 'Release Manager'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Configuration Manager'], pass@k: 0.36666666666666664, total_tokens: 15994
+
+Workflow roles: ['Requirement Engineer'], pass@k: 0.16666666666666666, total_tokens: 10226
+
+Workflow roles: ['Infrastructure Manager'], pass@k: 0.5, total_tokens: 27080
+
+Workflow roles: ['UI Designer'], pass@k: 0.6666666666666666, total_tokens: 29972
+
+Workflow roles: ['Configuration Manager'], pass@k: 0.26666666666666666, total_tokens: 10732
+
+Workflow roles: ['Security Engineer'], pass@k: 0.6, total_tokens: 28715
+
+Workflow roles: ['Full-stack Developer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Infrastructure Architect'], pass@k: 0.6333333333333333, total_tokens: 29850
+
+Workflow roles: ['Performance Engineer', 'Technical Writer', 'Code Generation Agent', 'Security Manager', 'Product Owner'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['DevOps Lead', 'Code Answer Extractor', 'Project Manager', 'Security Officer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Infrastructure Architect', 'Technical Lead', 'Deployment Agent'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Test Execution Agent', 'Data Architect', 'Code Refinement Agent', 'Monitoring Agent', 'QA Engineer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Back-end Developer', 'UX Researcher', 'Release Coordinator', 'Deployment Agent'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Back-end Developer', 'Code Review Agent', 'Business Analyst', 'Stakeholder', 'Security Engineer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Test Automation Engineer', 'Security Manager'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Back-end Developer', 'Alert/Response Agent', 'Data Privacy Officer', 'Requirement Engineer', 'Product Owner'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Compliance Officer', 'Release Manager', 'Customer Support'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Code Refinement Agent', 'Task Refinement Agent', 'Performance Engineer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Release Planner', 'Security Architect', 'Data Privacy Officer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['UI Designer', 'Security Architect', 'Requirement Engineer', 'Product Owner', 'Code Generation Agent'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Code Generation Agent', 'Business Analyst', 'UI Designer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Task Refinement Agent', 'Task Parsing Agent', 'Support Engineer', 'DevOps Security Engineer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['QA Engineer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Security Manager', 'Configuration Manager', 'Release Coordinator'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Requirement Engineer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Back-end Developer', 'Product Owner'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Integration Agent', 'Code Review Agent', 'Full-stack Developer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['DevOps Lead', 'Product Owner', 'Back-end Developer', 'Performance Engineer', 'Team Lead'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Technical Writer', 'Back-end Developer', 'Full-stack Developer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Security Officer', 'QA Lead'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Security Officer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['DevOps Engineer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Documentation Manager', 'Math Answer Extractor', 'UX Researcher'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Business Analyst', 'DevOps Security Engineer', 'UI Designer', 'Customer Support', 'Data Privacy Officer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Security Manager', 'Requirement Engineer', 'Configuration Manager'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Technical Lead'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Release Manager', 'UX Designer', 'Software Architect', 'Security Engineer', 'UI Designer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Infrastructure Architect', 'UX Research Lead'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['QA Lead'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Configuration Manager', 'Data Architect'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Back-end Developer', 'Stakeholder', 'Back-end Developer', 'Performance Engineer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Security Engineer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['UX Research Lead', 'Infrastructure Architect'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Software Architect', 'UX Research Lead', 'Release Planner', 'Documentation Agent'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Monitoring Agent', 'Release Coordinator'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Documentation Manager', 'UX Researcher', 'Security Manager', 'Security Officer', 'Requirement Engineer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Team Lead', 'Deployment Agent', 'Security Engineer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Scrum Master', 'UX Designer', 'Task Parsing Agent', 'Test Automation Engineer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Code Refinement Agent', 'Back-end Developer', 'Task Refinement Agent', 'Math Answer Extractor'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Post-mortem Analyst', 'UX Research Lead'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Code Answer Extractor', 'Stakeholder', 'DevOps Engineer', 'DevOps Lead'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['QA Lead'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Product Owner', 'Team Lead', 'DevOps Security Engineer', 'Back-end Developer', 'Front-end Developer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Customer Support', 'Security Architect', 'Test Execution Agent', 'DevOps Engineer', 'Release Coordinator'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Technical Lead', 'Documentation Manager', 'DevOps Lead'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Test Automation Engineer', 'Release Coordinator', 'Deployment Agent'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Data Architect', 'DevOps Security Engineer', 'UX Research Lead', 'Test Design Agent'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Requirement Engineer', 'Alert/Response Agent', 'Code Review Agent'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['QA Lead', 'Customer Support', 'Performance Engineer', 'Software Architect'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['UX Researcher', 'Scrum Master'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Compliance Officer', 'Full-stack Developer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Team Lead'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Code Review Agent', 'Project Manager', 'Monitoring Agent'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Security Engineer', 'Monitoring Agent', 'UX Research Lead', 'QA Lead', 'Math Answer Extractor'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Test Design Agent', 'Code Refinement Agent', 'Security Manager'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Back-end Developer', 'Release Manager', 'Deployment Agent', 'Security Engineer', 'Task Refinement Agent'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Infrastructure Manager'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Alert/Response Agent', 'Monitoring Agent'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Back-end Developer', 'Release Coordinator', 'Post-mortem Analyst', 'Code Review Agent', 'Security Officer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Code Generation Agent', 'Data Privacy Officer', 'Test Automation Engineer', 'Technical Writer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Test Automation Engineer', 'Release Coordinator', 'Test Design Agent', 'Code Answer Extractor', 'Performance Engineer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Requirement Engineer', 'Infrastructure Architect'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Code Refinement Agent', 'Test Automation Engineer', 'Requirement Engineer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Test Design Agent', 'Support Engineer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Release Manager', 'Product Owner', 'Documentation Manager', 'Support Engineer', 'UX Designer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Math Answer Extractor', 'Technical Lead', 'QA Lead', 'Compliance Officer', 'QA Engineer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['UI Designer'], pass@k: 0.0, total_tokens: 0
+Generation  25 | Best: 0.7000 | Avg: 0.1090
+[Saved] Pareto front saved to: graph/generation_async_26.png
+Generation  26 | Best: 0.7000 | Avg: 0.1277
+Generation  27 | Best: 0.7000 | Avg: 0.1330
+[Saved] Pareto front saved to: graph/generation_async_28.png
+Generation  28 | Best: 0.7000 | Avg: 0.1220
+Generation  29 | Best: 0.7000 | Avg: 0.1357
+[Saved] Pareto front saved to: graph/generation_async_30.png
+
+Workflow roles: ['UI Designer', 'DevOps Lead', 'Documentation Agent', 'Test Automation Engineer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Technical Lead', 'Technical Lead'], pass@k: 0.7, total_tokens: 52736
+
+Workflow roles: ['UI Designer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Requirement Engineer'], pass@k: 0.16666666666666666, total_tokens: 10226
+
+Workflow roles: ['UI Designer'], pass@k: 0.6666666666666666, total_tokens: 29972
+
+Workflow roles: ['UX Researcher'], pass@k: 0.4, total_tokens: 19602
+
+Workflow roles: ['UX Research Lead'], pass@k: 0.5666666666666667, total_tokens: 25474
+
+Workflow roles: ['Configuration Manager'], pass@k: 0.26666666666666666, total_tokens: 10732
+
+Workflow roles: ['Configuration Manager'], pass@k: 0.36666666666666664, total_tokens: 15994
+
+Workflow roles: ['DevOps Lead', 'Code Answer Extractor', 'Project Manager', 'Security Officer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Requirement Engineer', 'Infrastructure Architect'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Security Engineer'], pass@k: 0.6333333333333333, total_tokens: 29342
+
+Workflow roles: ['Full-stack Developer'], pass@k: 0.6, total_tokens: 25845
+
+Workflow roles: ['Performance Engineer', 'Technical Writer', 'Code Generation Agent', 'Security Manager', 'Product Owner'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Full-stack Developer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Project Manager', 'Release Manager'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Compliance Officer', 'Release Manager', 'Customer Support'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Code Refinement Agent', 'Task Refinement Agent', 'Performance Engineer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Release Planner', 'Security Architect', 'Data Privacy Officer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['UI Designer', 'Security Architect', 'Requirement Engineer', 'Product Owner', 'Code Generation Agent'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Code Generation Agent', 'Business Analyst', 'UI Designer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Task Refinement Agent', 'Task Parsing Agent', 'Support Engineer', 'DevOps Security Engineer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['QA Engineer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Security Manager', 'Configuration Manager', 'Release Coordinator'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Requirement Engineer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Back-end Developer', 'Product Owner'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Infrastructure Architect', 'Technical Lead', 'Deployment Agent'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Test Execution Agent', 'Data Architect', 'Code Refinement Agent', 'Monitoring Agent', 'QA Engineer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Back-end Developer', 'UX Researcher', 'Release Coordinator', 'Deployment Agent'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Back-end Developer', 'Code Review Agent', 'Business Analyst', 'Stakeholder', 'Security Engineer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Test Automation Engineer', 'Security Manager'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Back-end Developer', 'Alert/Response Agent', 'Data Privacy Officer', 'Requirement Engineer', 'Product Owner'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Documentation Manager', 'Math Answer Extractor', 'UX Researcher'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Business Analyst', 'DevOps Security Engineer', 'UI Designer', 'Customer Support', 'Data Privacy Officer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Security Manager', 'Requirement Engineer', 'Configuration Manager'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Technical Lead'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Release Manager', 'UX Designer', 'Software Architect', 'Security Engineer', 'UI Designer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Infrastructure Architect', 'UX Research Lead'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['QA Lead'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Configuration Manager', 'Data Architect'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Back-end Developer', 'Stakeholder', 'Back-end Developer', 'Performance Engineer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Security Engineer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['UX Research Lead', 'Infrastructure Architect'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Software Architect', 'UX Research Lead', 'Release Planner', 'Documentation Agent'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Monitoring Agent', 'Release Coordinator'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Documentation Manager', 'UX Researcher', 'Security Manager', 'Security Officer', 'Requirement Engineer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Team Lead', 'Deployment Agent', 'Security Engineer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Scrum Master', 'UX Designer', 'Task Parsing Agent', 'Test Automation Engineer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Code Refinement Agent', 'Back-end Developer', 'Task Refinement Agent', 'Math Answer Extractor'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Post-mortem Analyst', 'UX Research Lead'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Code Answer Extractor', 'Stakeholder', 'DevOps Engineer', 'DevOps Lead'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['QA Lead'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Product Owner', 'Team Lead', 'DevOps Security Engineer', 'Back-end Developer', 'Front-end Developer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Customer Support', 'Security Architect', 'Test Execution Agent', 'DevOps Engineer', 'Release Coordinator'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Technical Lead', 'Documentation Manager', 'DevOps Lead'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Test Automation Engineer', 'Release Coordinator', 'Deployment Agent'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Data Architect', 'DevOps Security Engineer', 'UX Research Lead', 'Test Design Agent'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Requirement Engineer', 'Alert/Response Agent', 'Code Review Agent'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Integration Agent', 'Code Review Agent', 'Full-stack Developer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['DevOps Lead', 'Product Owner', 'Back-end Developer', 'Performance Engineer', 'Team Lead'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Technical Writer', 'Back-end Developer', 'Full-stack Developer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Security Officer', 'QA Lead'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Security Officer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['DevOps Engineer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Security Engineer', 'Monitoring Agent', 'UX Research Lead', 'QA Lead', 'Math Answer Extractor'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Code Review Agent', 'Project Manager', 'Monitoring Agent'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Team Lead'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Compliance Officer', 'Full-stack Developer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['UX Researcher', 'Scrum Master'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['QA Lead', 'Customer Support', 'Performance Engineer', 'Software Architect'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Infrastructure Manager'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Test Design Agent', 'Code Refinement Agent', 'Security Manager'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Test Automation Engineer', 'Release Coordinator', 'Test Design Agent', 'Code Answer Extractor', 'Performance Engineer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Code Generation Agent', 'Data Privacy Officer', 'Test Automation Engineer', 'Technical Writer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Back-end Developer', 'Release Coordinator', 'Post-mortem Analyst', 'Code Review Agent', 'Security Officer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Alert/Response Agent', 'Monitoring Agent'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Math Answer Extractor', 'Technical Lead', 'QA Lead', 'Compliance Officer', 'QA Engineer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Release Manager', 'Product Owner', 'Documentation Manager', 'Support Engineer', 'UX Designer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Test Design Agent', 'Support Engineer'], pass@k: 0.0, total_tokens: 0
+
+Workflow roles: ['Back-end Developer', 'Release Manager', 'Deployment Agent', 'Security Engineer', 'Task Refinement Agent'], pass@k: 0.0, total_tokens: 0
+
+============================================================
+FINAL BEST WORKFLOW
+============================================================
+
+Fitness: 0.70000
+============================================================
+
+
+Best workflow roles: ['UI Designer', 'DevOps Lead', 'Documentation Agent', 'Test Automation Engineer']
+Fitness: 0.0000

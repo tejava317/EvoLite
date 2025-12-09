@@ -15,6 +15,10 @@ from src.datasets import MBPPDataset, MathAlgebraDataset, BaseDataset
 from src.evaluation.pass_at_k import quick_evaluate
 from src.ga.multi_objective import *
 
+import asyncio
+import functools
+print = functools.partial(print, flush=True)
+
 # =============== CONFIGURATION ===============
 # POPULATION_SIZE = 100
 # GENERATIONS = 100
@@ -24,7 +28,7 @@ from src.ga.multi_objective import *
 # MAX_WORKFLOW_LENGTH = 5
 
 # Evaluation configuration
-NUM_EVAL_PROBLEMS = 10  # Number of problems to evaluate per fitness calculation
+NUM_EVAL_PROBLEMS = 30  # Number of problems to evaluate per fitness calculation
 EVAL_SEED = None  # Set to an integer for reproducible sampling
 TOKEN_PENALTY = 0.0001  # Penalty coefficient for token usage
 
@@ -161,44 +165,61 @@ def evaluate_fitness_server(workflow: Union[Workflow, BlockWorkflow], server_url
             return 0.0
 
 
+# To avoid the timeout, we use the static batch size.
+def evaluate_fitness_batch(workflows, server_url: str = None, batch_size: int = 10):
 
-def evaluate_fitenss_batch(workflows, server_url: str = None):
-
-    from src.evaluation_client import EvaluationClient, BlockConfig, evaluate_block_workflow
-    
-    url = server_url or EVAL_SERVER_URL
-    
-    # Check all tasks are same or not.
-    all_tasks_equal = len({wf.task_name for wf in workflows}) == 1
-    if not all_tasks_equal:
-        raise ValueError("The task is different")
-    # print("Tasks are same, perform batch evaluation.")
-
-    if all(isinstance(wf, BlockWorkflow) for wf in workflows):
-
-        # Use the dedicated BlockWorkflow evaluation
-        # Block configuration
-        blocks_list = []
+    async def _run():
+        from src.evaluation_client import EvaluationClient, BlockConfig, evaluate_block_workflow
         
-        for workflow in workflows: 
-            blocks = []
-            for block in workflow.blocks:
-                if isinstance(block, AgentBlock):
-                    blocks.append(BlockConfig(type="agent", role=block.role))
-                elif isinstance(block, CompositeBlock):
-                    blocks.append(BlockConfig(
-                        type="composite",
-                        divider_role=block.divider_role,
-                        synth_role=block.synth_role
-                    ))
-            blocks_list.append(blocks)
+        url = server_url or EVAL_SERVER_URL
 
-        client = EvaluationClient(server_url)
-        result = client.evaluate_batch(blocks_list, workflows[0].task_name, NUM_EVAL_PROBLEMS)
+        # Check all tasks are same or not.
+        all_tasks_equal = len({wf.task_name for wf in workflows}) == 1
+        if not all_tasks_equal:
+            raise ValueError("The task inside a batch is different")
 
-        return result
-    else:
-        raise ValueError("Wrong type of agent.")    
+        print(f"{len(workflows)} workflows are ready to be evaluated.")
+        all_results = []
+
+        # sector the workflow witht the batch size.
+        for start in range(0, len(workflows), batch_size):
+            batch = workflows[start:start + batch_size]
+
+            # BlockWorkflow 처리
+            if all(isinstance(wf, BlockWorkflow) for wf in batch):
+
+                blocks_list = []
+                
+                for workflow in batch:
+                    blocks = []
+                    for block in workflow.blocks:
+                        if isinstance(block, AgentBlock):
+                            blocks.append(BlockConfig(type="agent", role=block.role))
+                        elif isinstance(block, CompositeBlock):
+                            blocks.append(BlockConfig(
+                                type="composite",
+                                divider_role=block.divider_role,
+                                synth_role=block.synth_role
+                            ))
+                    blocks_list.append(blocks)
+
+                client = EvaluationClient(url)
+                result = client.evaluate_batch(
+                    blocks_list,
+                    batch[0].task_name,
+                    NUM_EVAL_PROBLEMS
+                )
+
+                if isinstance(result, list):
+                    all_results.extend(result)
+                else:
+                    raise ValueError("evaluate_batch should return a list.")
+
+            else:
+                raise ValueError("Wrong type of agent.")
+        return all_results
+    return asyncio.run(_run())
+
 
 
 # From the agent list, select one random agent role.
@@ -262,7 +283,7 @@ def initialize_population(task_name: str, server_url: str, use_extractor: bool =
             # fitness = evaluate_fitness_fast(workflow)   # Dictionary: {"pass_at_k": , "token": }
             population.append({"workflow": workflow, "fitness": -float("inf")})
         
-        result = evaluate_fitenss_batch(workflows, server_url)
+        result = evaluate_fitness_batch(workflows, server_url)
         for i in range(len(workflows)):
             population[i]["fitness"] = {"pass_at_k": result[i].pass_at_1, "token" : result[i].total_tokens}
 
@@ -278,7 +299,7 @@ def addition(workflow: BlockWorkflow) -> BlockWorkflow:
         new_agent_role = random_agent()
         idx = random.randint(0, len(new_workflow.blocks))
         
-        if random.random() < 1.0:
+        if random.random() < 0.8:
             new_workflow.insert_block(AgentBlock(new_agent_role), idx)
         else:
             new_workflow.insert_block(CompositeBlock(), idx)
@@ -318,7 +339,7 @@ def crossover(parent1: BlockWorkflow, parent2: BlockWorkflow) -> BlockWorkflow:
 # Mutation operator for BlockWorkflow
 # An addition or deletion is selectively chosen.
 def mutate(workflow: BlockWorkflow) -> BlockWorkflow:
-    if random.random() < 0.5:
+    if random.random() < 1.0:
         return addition(workflow)
     else:
         return deletion(workflow)
@@ -383,7 +404,7 @@ def run_ga(
     elif use_real_evaluation:
         eval_fn = evaluate_fitness
     elif use_batch:
-        eval_fn = evaluate_fitenss_batch
+        eval_fn = evaluate_fitness_batch
     else:
         eval_fn = evaluate_fitness_fast
     
@@ -409,14 +430,15 @@ def run_ga(
         
         # Plot the selected elite ones.
         if (generation + 1) % 2 == 0:
-            plot_pareto(new_population, f"generation_{generation+1}")
+            plot_pareto(new_population, f"generation_async2_{generation+1}")
         
         # Record the workflow
-        for entry in new_population:
-            entry['workflow']._expand_blocks_to_agents()
-            entry_pass_at_k = entry["fitness"]["pass_at_k"]
-            entry_token = entry["fitness"]["token"]
-            print(f"\nWorkflow roles: {[a.role for a in entry['workflow'].agents]}, pass@k: {entry_pass_at_k}, total_tokens: {entry_token}")
+        if verbose and (generation + 1) % 5 == 0:
+            for entry in new_population:
+                entry['workflow']._expand_blocks_to_agents()
+                entry_pass_at_k = entry["fitness"]["pass_at_k"]
+                entry_token = entry["fitness"]["token"]
+                print(f"\nWorkflow roles: {[a.role for a in entry['workflow'].agents]}, pass@k: {entry_pass_at_k}, total_tokens: {entry_token}")
 
         # Generate new population
         child_workflows = []

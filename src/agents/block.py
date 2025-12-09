@@ -73,7 +73,7 @@ class CompositeBlock(Block):
             if not div_output:
                 div_output = default_role
         except Exception:
-            div_output = "Business Analyst, Install KaKao Talk, Snack Eating"
+            div_output = "Business Analyst, Technical Lead, Quality Assurance"
 
         inner_roles = self._parse_inner_roles(div_output)
 
