@@ -37,6 +37,7 @@ class EvalResult:
     num_correct: int
     num_problems: int
     total_tokens: int
+    completion_tokens: int  # Generated tokens only (excludes prompts)
     total_time: float
     tokens_per_second: float
     error: Optional[str] = None
@@ -117,7 +118,7 @@ class EvaluationClient:
         num_problems: int = 10,
         use_extractor: bool = True,
         seed: Optional[int] = None,
-        think: bool = False
+        think: bool = False,
     ) -> EvalResult:
         """
         Evaluate a workflow with simple role list (converts to AgentBlocks).
@@ -139,7 +140,7 @@ class EvaluationClient:
             "use_extractor": use_extractor,
             "think": think,
             "num_problems": num_problems,
-            "seed": seed
+            "seed": seed,
         }
         
         try:
@@ -156,6 +157,7 @@ class EvaluationClient:
                     num_correct=data["num_correct"],
                     num_problems=data["num_problems"],
                     total_tokens=data["total_tokens"],
+                    completion_tokens=data.get("completion_tokens", 0),
                     total_time=data["total_time"],
                     tokens_per_second=data["tokens_per_second"]
                 )
@@ -165,6 +167,7 @@ class EvaluationClient:
                 num_correct=0,
                 num_problems=num_problems,
                 total_tokens=0,
+                completion_tokens=0,
                 total_time=0,
                 tokens_per_second=0,
                 error=str(e)
@@ -177,7 +180,7 @@ class EvaluationClient:
         num_problems: int = 10,
         use_extractor: bool = True,
         seed: Optional[int] = None,
-        think: bool = False
+        think: bool = False,
     ) -> EvalResult:
         """
         Evaluate a BlockWorkflow.
@@ -201,7 +204,7 @@ class EvaluationClient:
                 "think": think
             },
             "num_problems": num_problems,
-            "seed": seed
+            "seed": seed,
         }
         
         try:
@@ -218,6 +221,7 @@ class EvaluationClient:
                     num_correct=data["num_correct"],
                     num_problems=data["num_problems"],
                     total_tokens=data["total_tokens"],
+                    completion_tokens=data.get("completion_tokens", 0),
                     total_time=data["total_time"],
                     tokens_per_second=data["tokens_per_second"]
                 )
@@ -227,6 +231,7 @@ class EvaluationClient:
                 num_correct=0,
                 num_problems=num_problems,
                 total_tokens=0,
+                completion_tokens=0,
                 total_time=0,
                 tokens_per_second=0,
                 error=str(e)
@@ -239,7 +244,7 @@ class EvaluationClient:
         num_problems: int = 10,
         use_extractor: bool = True,
         seed: Optional[int] = None,
-        think: bool = False
+        think: bool = False,
     ) -> EvalResult:
         """Async version of evaluate_simple."""
         payload = {
@@ -248,7 +253,7 @@ class EvaluationClient:
             "use_extractor": use_extractor,
             "think": think,
             "num_problems": num_problems,
-            "seed": seed
+            "seed": seed,
         }
         
         try:
@@ -265,6 +270,7 @@ class EvaluationClient:
                 num_correct=data["num_correct"],
                 num_problems=data["num_problems"],
                 total_tokens=data["total_tokens"],
+                completion_tokens=data.get("completion_tokens", 0),
                 total_time=data["total_time"],
                 tokens_per_second=data["tokens_per_second"]
             )
@@ -274,6 +280,7 @@ class EvaluationClient:
                 num_correct=0,
                 num_problems=num_problems,
                 total_tokens=0,
+                completion_tokens=0,
                 total_time=0,
                 tokens_per_second=0,
                 error=str(e)
@@ -286,7 +293,7 @@ class EvaluationClient:
         num_problems: int = 10,
         use_extractor: bool = True,
         seed: Optional[int] = None,
-        think: bool = False
+        think: bool = False,
     ) -> EvalResult:
         """Async version of evaluate."""
         payload = {
@@ -297,7 +304,7 @@ class EvaluationClient:
                 "think": think
             },
             "num_problems": num_problems,
-            "seed": seed
+            "seed": seed,
         }
         
         try:
@@ -314,6 +321,7 @@ class EvaluationClient:
                 num_correct=data["num_correct"],
                 num_problems=data["num_problems"],
                 total_tokens=data["total_tokens"],
+                completion_tokens=data.get("completion_tokens", 0),
                 total_time=data["total_time"],
                 tokens_per_second=data["tokens_per_second"]
             )
@@ -323,6 +331,7 @@ class EvaluationClient:
                 num_correct=0,
                 num_problems=num_problems,
                 total_tokens=0,
+                completion_tokens=0,
                 total_time=0,
                 tokens_per_second=0,
                 error=str(e)
@@ -335,7 +344,7 @@ class EvaluationClient:
         num_problems: int = 10,
         use_extractor: bool = True,
         seed: Optional[int] = None,
-        think: bool = False
+        think: bool = False,
     ) -> List[EvalResult]:
         """
         Evaluate multiple workflows (simple role lists) on the same problems.
@@ -365,7 +374,7 @@ class EvaluationClient:
         num_problems: int = 10,
         use_extractor: bool = True,
         seed: Optional[int] = None,
-        think: bool = False
+        think: bool = False,
     ) -> List[EvalResult]:
         """
         Evaluate multiple BlockWorkflows on the same problems.
@@ -392,7 +401,7 @@ class EvaluationClient:
                 for blocks in workflows
             ],
             "num_problems": num_problems,
-            "seed": seed
+            "seed": seed,
         }
         
         try:
@@ -412,6 +421,7 @@ class EvaluationClient:
                             num_correct=0,
                             num_problems=num_problems,
                             total_tokens=0,
+                            completion_tokens=0,
                             total_time=0,
                             tokens_per_second=0,
                             error=item["error"]
@@ -423,6 +433,7 @@ class EvaluationClient:
                             num_correct=r["num_correct"],
                             num_problems=r["num_problems"],
                             total_tokens=r["total_tokens"],
+                            completion_tokens=r.get("completion_tokens", 0),
                             total_time=r["total_time"],
                             tokens_per_second=r["tokens_per_second"]
                         ))
@@ -434,6 +445,7 @@ class EvaluationClient:
                     num_correct=0,
                     num_problems=num_problems,
                     total_tokens=0,
+                    completion_tokens=0,
                     total_time=0,
                     tokens_per_second=0,
                     error=str(e)
@@ -448,16 +460,21 @@ class EvaluationClient:
         num_problems: int = 10,
         use_extractor: bool = True,
         seed: Optional[int] = None,
-        think: bool = False
+        think: bool = False,
     ) -> List[EvalResult]:
         """
-        Async version of evaluate_batch with chunking to avoid oversized single requests.
-        Client no longer chunks; server is responsible for queuing.
+        Async version of evaluate_batch.
+        
+        Each workflow is evaluated concurrently on the server side.
         
         Args:
+            workflows: List of block lists
+            task_name: Dataset/task name
+            num_problems: Number of problems
+            use_extractor: Whether to use extractor
+            seed: Random seed
             think: Enable thinking mode (/think). Default is /no_think
         """
-
         payload = {
             "workflows": [
                 {
@@ -469,7 +486,7 @@ class EvaluationClient:
                 for blocks in workflows
             ],
             "num_problems": num_problems,
-            "seed": seed
+            "seed": seed,
         }
         
         try:
@@ -489,6 +506,7 @@ class EvaluationClient:
                         num_correct=0,
                         num_problems=num_problems,
                         total_tokens=0,
+                        completion_tokens=0,
                         total_time=0,
                         tokens_per_second=0,
                         error=item["error"]
@@ -500,6 +518,7 @@ class EvaluationClient:
                         num_correct=r["num_correct"],
                         num_problems=r["num_problems"],
                         total_tokens=r["total_tokens"],
+                        completion_tokens=r.get("completion_tokens", 0),
                         total_time=r["total_time"],
                         tokens_per_second=r["tokens_per_second"]
                     ))
@@ -511,6 +530,7 @@ class EvaluationClient:
                     num_correct=0,
                     num_problems=num_problems,
                     total_tokens=0,
+                    completion_tokens=0,
                     total_time=0,
                     tokens_per_second=0,
                     error=str(e)

@@ -1,27 +1,33 @@
 # src/utils/generate_prompts.py
 """
-Prompt Generator for Evolving Workflows - Uses GPT API
+Prompt Configuration for Evolving Workflows
+
+This module is the SINGLE SOURCE OF TRUTH for all prompt-related constants and utilities.
+Both the prompt generator and evaluation server import from here.
 
 Design Principles:
 1. Agent prompts are TASK-AGNOSTIC (same for MBPP, MATH, CRUX-O, etc.)
 2. Task description is appended only to the FIRST agent in the workflow
 3. Extractors are DATASET-SPECIFIC (code vs math vs output prediction)
 4. All agents follow PASS-THROUGH pattern (pass relevant info to next agent)
-5. User prompts are SIMPLE to force collaboration between agents
 """
 
 import yaml
 import os
-import json
 from pathlib import Path
-from typing import Optional
-from dataclasses import dataclass
-from openai import OpenAI
+from typing import Optional, Dict
 from concurrent.futures import ThreadPoolExecutor, as_completed
-import time
-from dotenv import load_dotenv
 
-load_dotenv()
+try:
+    from openai import OpenAI
+except ImportError:
+    OpenAI = None
+
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
 
 # ============== Configuration ==============
 
@@ -29,50 +35,164 @@ PROJECT_ROOT = Path(__file__).parent.parent.parent
 
 
 # ============== Structured Output Format ==============
-# All agents MUST output in this format. [PROBLEM], [COMMENT], [ANSWER] are passed to next agent. [WORK] is logged only.
+# All agents MUST output in YAML format. problem:, comment:, answer: are passed to next agent. work: is logged only.
+# Dataset-specific instructions guide what goes in the answer: field.
 
-STRUCTURED_OUTPUT_FORMAT = """
-**OUTPUT FORMAT (MUST follow exactly):**
+STRUCTURED_OUTPUT_BASE = """
+**OUTPUT FORMAT:**
 
----BEGIN STRUCTURED OUTPUT---
+You MUST output EXACTLY ONE yaml code block containing ALL your response. Nothing outside the block.
 
-[PROBLEM]
-{COPY THE EXACT ORIGINAL PROBLEM INCLUDING TEST CASES - DO NOT MODIFY OR TRUNCATE}
+```yaml
+problem: |
+  Copy the original problem EXACTLY (including given test cases). Do not modify.
 
-[WORK]
-{Your detailed analysis/reasoning - NOT passed to next agent}
+work: |
+  Your detailed analysis/reasoning. This is NOT passed forward.
+  Do NOT place final answers or code here.
 
-[COMMENT]
-{Brief notes for next agent: function name, edge cases, key insights (1-3 sentences)}
+comment: |
+  1-3 sentences for the next agent: function name, edge cases, key risks, status of answer.
 
-[ANSWER]
-{Your working code/solution - function name MUST match the assert statement}
+answer: |
+  {answer_description}
+```
 
----END STRUCTURED OUTPUT---
+CRITICAL RULES:
+1. Output ONLY ONE ```yaml block. Nothing outside it.
+2. NEVER use ``` inside the yaml block. Write code/math directly after "answer: |"
+3. MUST indent all content by 2 spaces after each field (problem:|, work:|, comment:|, answer:|)
 """
 
-STRUCTURED_OUTPUT_INSTRUCTION = """
-**CRITICAL OUTPUT RULES:**
+# Dataset-specific answer instructions
+STRUCTURED_OUTPUT_INSTRUCTIONS = {
+    "MBPP": STRUCTURED_OUTPUT_BASE.format(
+        answer_description="The Python function implementation."
+    ) + """
+MBPP RULES:
+- The function name is in the example test case (e.g., assert remove_Occ(...) means def remove_Occ)
+- Write the complete function with correct name from the test case
+- Add imports if needed (e.g., import re, from collections import ...)
+- Write code directly with 2-space indent, NO ```python fences
 
-1. [PROBLEM] - COPY VERBATIM. Include ALL text: problem description AND test cases (assert statements).
-   - The test case contains the EXACT function name you MUST use.
-   - DO NOT summarize, paraphrase, or truncate. Copy character-for-character.
-   
-2. [WORK] - Your detailed reasoning (logged only, NOT passed to next agent).
+CORRECT indentation:
+answer: |
+  def foo():      <- 2 spaces before 'def'
+      return 1    <- 2+4 spaces (standard Python indent)
 
-3. [COMMENT] - Brief notes for the next agent (1-3 sentences). Passed forward.
-   - Use this to highlight: function name, edge cases, key insights, warnings.
-   
-4. [ANSWER] - Your concrete contribution: working code that passes the test case.
-   - Function name MUST match the test case exactly.
-   - Code must be complete and executable.
+EXAMPLE:
+```yaml
+problem: |
+  Write a python function to remove first and last occurrence of a given character from the string.
 
-Passed to next agent: [PROBLEM], [COMMENT], [ANSWER]
-NOT passed (logged only): [WORK]
-"""
+  Example test case:
+  assert remove_Occ("hello","l") == "heo"
+
+work: |
+  Need to find first occurrence, remove it, then find last and remove.
+  Function name from test: remove_Occ
+
+comment: |
+  Function remove_Occ, handles string manipulation with two passes.
+
+answer: |
+  def remove_Occ(s, ch):
+      for i in range(len(s)):
+          if s[i] == ch:
+              s = s[:i] + s[i+1:]
+              break
+      for i in range(len(s)-1, -1, -1):
+          if s[i] == ch:
+              s = s[:i] + s[i+1:]
+              break
+      return s
+```
+""",
+
+    "MATH": STRUCTURED_OUTPUT_BASE.format(
+        answer_description="The mathematical solution. MUST end with \\boxed{final_answer}."
+    ) + """
+MATH RULES:
+- Problems use LaTeX notation (e.g., $y=\\frac{2}{x^2+x-6}$)
+- Show step-by-step reasoning in work: field
+- answer: MUST end with \\boxed{...} containing the final answer
+- Answers can be: integers (\\boxed{2}), fractions (\\boxed{\\dfrac{9}{7}}), expressions (\\boxed{i})
+
+EXAMPLE:
+```yaml
+problem: |
+  How many vertical asymptotes does the graph of $y=\\frac{2}{x^2+x-6}$ have?
+
+work: |
+  Factor denominator: x^2+x-6 = (x-2)(x+3)
+  Vertical asymptotes occur where denominator = 0
+  x = 2 and x = -3 are the zeros
+  Numerator 2 is never zero, so both are asymptotes
+
+comment: |
+  Factored quadratic, found 2 vertical asymptotes at x=2 and x=-3.
+
+answer: |
+  The denominator factors as $x^2+x-6=(x-2)(x+3)$.
+  Setting denominator to zero: $x=2$ or $x=-3$.
+  Since numerator is always nonzero, both give vertical asymptotes.
+  \\boxed{2}
+```
+""",
+
+    "CRUX-O": STRUCTURED_OUTPUT_BASE.format(
+        answer_description="The predicted output value ONLY. A Python literal (list, dict, int, str, etc). NO code, NO assert."
+    ) + """
+CRUX-O RULES:
+- You are given Python code and must predict what f(input) returns
+- Trace through the code step-by-step in work: field
+- answer: MUST contain ONLY the raw Python literal output
+- Include quotes for strings: 'hello' not hello
+- Common output types: lists, tuples, dicts, strings, ints, bools
+
+CORRECT answer: field examples:
+  [(4, 1), (4, 1), (2, 3), (2, 3)]
+  {1: None, 2: None}
+  'hbtofdeiequ'
+  True
+  42
+
+WRONG (do NOT do these):
+  assert f(x) == [1, 2, 3]   <- NO assert
+  The output is [1, 2, 3]    <- NO prose
+
+EXAMPLE:
+```yaml
+problem: |
+  def f(nums):
+      output = []
+      for n in nums:
+          output.append((nums.count(n), n))
+      output.sort(reverse=True)
+      return output
+  assert f([1, 1, 3, 1, 3, 1]) ==
+
+work: |
+  nums = [1, 1, 3, 1, 3, 1]
+  count(1) = 4, count(3) = 2
+  output = [(4,1), (4,1), (2,3), (4,1), (2,3), (4,1)]
+  After sort(reverse=True): [(4,1), (4,1), (4,1), (4,1), (2,3), (2,3)]
+
+comment: |
+  Counts occurrences, creates tuples, sorts descending.
+
+answer: |
+  [(4, 1), (4, 1), (4, 1), (4, 1), (2, 3), (2, 3)]
+```
+""",
+}
+
+# Default/fallback for unknown datasets
+STRUCTURED_OUTPUT_DEFAULT = STRUCTURED_OUTPUT_INSTRUCTIONS["MBPP"]
 
 
-# 50 Agent Roles for Evolution
+# ============== 50 Agent Roles for Evolution ==============
+
 AGENT_ROLES = [
     # === Core Solution Agents ===
     ("Task Decomposer", "Parse the benchmark problem and decompose it into clear sub-tasks and constraints."),
@@ -145,6 +265,58 @@ AGENT_ROLES = [
     ("Final Presenter", "Produce the final answer and formatted output ready for benchmark evaluation."),
 ]
 
+# Roles that should actively create/refresh solutions in answer: field.
+CREATOR_ROLE_OVERRIDES = {
+    "solution drafter",
+    "logic implementer",
+    "math specialist",
+    "data & arrays specialist",
+    "strings & text specialist",
+    "graph & combinatorics specialist",
+    "dynamic programming specialist",
+}
+
+# Default behaviour: verification/analysis roles copy or fix existing answers, never invent from scratch.
+DEFAULT_ROLE_BEHAVIOR = "revise"
+
+
+def determine_role_behavior(role_name: str) -> str:
+    """
+    Decide whether a role should create new solutions ("create") or only revise/carry forward ("revise").
+    Defaults to revise to prevent non-solver agents from inventing answers.
+    """
+    role_lower = role_name.strip().lower()
+    if role_lower in CREATOR_ROLE_OVERRIDES:
+        return "create"
+    return DEFAULT_ROLE_BEHAVIOR
+
+
+def build_role_prompt(role_name: str, responsibility: str, behavior: str) -> str:
+    """
+    Deterministic, task-agnostic prompt builder with explicit answer handling.
+    Output is in YAML format.
+    """
+    base_intro = f"You are the {role_name}. {responsibility.strip()}"
+    shared_flow = (
+        "You receive problem, comment, and answer from the previous agent in YAML format. "
+        "Use work: for your reasoning (it is NOT forwarded). "
+        "Use comment: to leave 1-3 critical notes for the next agent."
+    )
+    
+    if behavior == "create":
+        answer_rule = (
+            "Always place the full candidate solution in answer: (code/math/output). "
+            "If a prior answer exists, rewrite or improve it—never drop it or move it to work:. "
+            "Do not leave answer: empty."
+        )
+    else:
+        answer_rule = (
+            "If a prior answer exists, copy it into answer: and adjust only when needed; never discard it or hide it in work:. "
+            "If no prior answer exists, leave answer: blank instead of inventing a solution."
+        )
+    
+    return " ".join([base_intro, shared_flow, answer_rule])
+
 
 # ============== Task Descriptions ==============
 
@@ -198,11 +370,11 @@ Example problem:
 Example answer: [(4, 1), (4, 1), (4, 1), (4, 1), (2, 3), (2, 3)]
 
 RULES:
-1. Trace through the code step-by-step in [WORK]
-2. In [ANSWER], write ONLY the predicted output value
+1. Trace through the code step-by-step in work: field
+2. In answer: field, write ONLY the predicted output value
 3. The answer must be a valid Python literal: list, tuple, dict, string, int, bool, etc.
 
-CRITICAL: [ANSWER] must contain the actual predicted value like:
+CRITICAL: answer: must contain the actual predicted value like:
   [2, 2, 3, 2, 3, 3]
   'hello world'
   42
@@ -217,173 +389,56 @@ DO NOT leave placeholders. DO NOT write code. Just the output value.""",
 # Keyed by benchmark name, designed based on actual data formats
 
 EXTRACTOR_PROMPTS = {
-    "MBPP": """Extract the Python function.
+    "MBPP": """Extract the Python solution code.
 
-OUTPUT: Raw code starting with "def" or "import". No markdown, no explanation.
+Rules:
+- Return ONLY valid Python code (imports + exactly one function def block). No markdown fences or prose.
+- If multiple defs exist, return the last full function block with any required imports above it.
+- If the text says NO_ANSWER/None yet or no def is present, return exactly NO_ANSWER.
 
-Example:
-def remove_Occ(s, ch):
-    s = s.replace(ch, '', 1)
-    return s[::-1].replace(ch, '', 1)[::-1]""",
+Examples:
+INPUT: answer: |\\n  from math import sqrt\\n  def is_square(n):\\n    r=int(sqrt(n));return r*r==n\\nOUTPUT: from math import sqrt\\ndef is_square(n):\\n    r=int(sqrt(n));return r*r==n
 
-    "MATH": """Extract the final answer.
+INPUT: def add(a,b):\\n    return a+b\\n\\ndef mul(a,b):\\n    return a*b\\nOUTPUT: def mul(a,b):\\n    return a*b
 
-OUTPUT: \\boxed{answer} only.
+INPUT: None yet\\nOUTPUT: NO_ANSWER
 
-Examples: \\boxed{2}, \\boxed{\\frac{3}{4}}, \\boxed{x \\in [-2,7]}""",
+Now return the extracted code or NO_ANSWER:""",
 
-    "CRUX-O": """Extract the output value.
+    "MATH": """Extract the final \\boxed{...} expression.
 
-OUTPUT: Python literal only. No "assert", no explanation.
+Rules:
+- Choose the last non-empty \\boxed{...} in the text (even if other boxed steps exist).
+- Ignore surrounding $$ math fences or other markup; output only the \\boxed{...}.
+- Output must be exactly ONE line: either the boxed expression or NO_ANSWER (nothing else, no echo, no preamble).
+- If there is no \\boxed{...} or the text says NO_ANSWER/None yet, return exactly NO_ANSWER.
 
-Examples: [(4, 1), (2, 3)], 'hello', {1: None}, False""",
+Examples:
+INPUT: ... we simplify to \\boxed{\\frac{7}{3}}.\\nOUTPUT: \\boxed{\\frac{7}{3}}
+
+INPUT: First step \\boxed{2}, final \\boxed{5}\\nOUTPUT: \\boxed{5}
+
+INPUT: (no boxed)\\nOUTPUT: NO_ANSWER
+
+Now return the boxed answer or NO_ANSWER:""",
+
+    "CRUX-O": """Extract the predicted output as a Python literal.
+
+Rules:
+- Prefer the literal to the right of '==' if present (matches CRUX direct-output prompts: 'assert f(input) ==').
+- Otherwise return the last explicit Python literal (list/dict/tuple/str/int/bool/None/etc.) in the text.
+- If the text says NO_ANSWER/None yet or no literal is present, return exactly NO_ANSWER.
+- Do not add markdown, 'assert', or prose.
+
+Examples:
+INPUT: assert f([1,1,3]) == [(2, 1), (1, 3)]\\nOUTPUT: [(2, 1), (1, 3)]
+
+INPUT: The output will be {'a': 1, 'b': None}\\nOUTPUT: {'a': 1, 'b': None}
+
+INPUT: NO_ANSWER\\nOUTPUT: NO_ANSWER
+
+Now return the extracted literal or NO_ANSWER:""",
 }
-
-
-# ============== GPT-based Prompt Generation ==============
-
-PROMPT_GENERATION_SYSTEM = """You are an expert prompt engineer designing system prompts for AI agents in a multi-agent workflow.
-
-CONTEXT:
-- These agents work together to solve benchmark problems (code generation, math problems, output prediction)
-- Each agent has a specific role and receives input from the previous agent
-- Agents use a STRUCTURED OUTPUT format to preserve the original problem and pass forward cleanly
-
-THE STRUCTURED OUTPUT FORMAT:
-All agents MUST output in this exact format:
-
----BEGIN STRUCTURED OUTPUT---
-[PROBLEM]
-{The exact original problem - copied verbatim}
-[WORK]
-{Detailed analysis - NOT passed to next agent}
-[COMMENT]
-{Brief notes for next agent: key insights, edge cases, warnings (1-3 sentences)}
-[ANSWER]
-{Concrete output passed forward}
----END STRUCTURED OUTPUT---
-
-CRITICAL REQUIREMENTS:
-1. The agent must ALWAYS copy the [PROBLEM] section verbatim from input
-2. The agent can do detailed work in [WORK] (logged but not passed forward)
-3. The agent should add brief notes in [COMMENT] (passed to next agent)
-4. The agent's concrete contribution goes in [ANSWER]
-5. The prompt should be task-agnostic (works for code, math, output prediction)
-6. Be concise (100-200 words, excluding the format instructions)
-
-Generate a professional, effective system prompt for the agent."""
-
-PROMPT_GENERATION_USER_TEMPLATE = """Generate a system prompt for this agent:
-
-ROLE NAME: {role_name}
-RESPONSIBILITY: {responsibility}
-
-The prompt should:
-1. Define the agent's identity and role clearly (1-2 sentences)
-2. Explain what the agent does with [PROBLEM], [COMMENT], and [ANSWER] from input
-3. Explain what the agent contributes to [COMMENT] (brief notes) and [ANSWER] (solution)
-4. MUST include the structured output format requirement
-5. Be task-agnostic (works for any benchmark)
-6. Be concise - the format instructions will be appended separately
-
-Generate ONLY the system prompt text (without format instructions), nothing else."""
-
-
-class GPTPromptGenerator:
-    """Generate agent prompts using GPT API."""
-    
-    def __init__(self, model: str = "gpt-4o-mini", api_key: str = None):
-        self.model = model
-        
-        # Try to get API key from various sources
-        if api_key:
-            self.client = OpenAI(api_key=api_key)
-        else:
-            # Try config first
-            try:
-                from src.config import OPENAI_API_KEY
-                if OPENAI_API_KEY:
-                    self.client = OpenAI(api_key=OPENAI_API_KEY)
-                    return
-            except ImportError:
-                pass
-            
-            # Try environment variable
-            import os
-            env_key = os.getenv("OPENAI_API_KEY")
-            if env_key:
-                self.client = OpenAI(api_key=env_key)
-            else:
-                raise ValueError(
-                    "No OpenAI API key found. Set OPENAI_API_KEY environment variable "
-                    "or pass api_key parameter."
-                )
-    
-    def generate_single_prompt(self, role_name: str, responsibility: str) -> str:
-        """Generate a prompt for a single agent role."""
-        user_content = PROMPT_GENERATION_USER_TEMPLATE.format(
-            role_name=role_name,
-            responsibility=responsibility
-        )
-        
-        try:
-            response = self.client.chat.completions.create(
-                model=self.model,
-                messages=[
-                    {"role": "system", "content": PROMPT_GENERATION_SYSTEM},
-                    {"role": "user", "content": user_content}
-                ],
-                temperature=0.7,
-                max_tokens=500,
-            )
-            return response.choices[0].message.content.strip()
-        except Exception as e:
-            print(f"  ✗ Error generating prompt for {role_name}: {e}")
-            # Fallback to template
-            return self._fallback_prompt(role_name, responsibility)
-    
-    def _fallback_prompt(self, role_name: str, responsibility: str) -> str:
-        """Fallback template if API fails."""
-        return f"""You are a **{role_name}** in a multi-agent workflow.
-
-Your responsibility: {responsibility}
-
-You will receive input containing [PROBLEM], [COMMENT], and [ANSWER] sections from the previous agent.
-
-YOUR TASK:
-1. Read the [PROBLEM] section - this is the original task (DO NOT modify it)
-2. Consider the [COMMENT] and [ANSWER] from previous agents
-3. Do your specific work based on your role
-4. Add brief notes in [COMMENT] for the next agent
-5. Produce your contribution in the [ANSWER] section"""
-    
-    def generate_all_prompts(self, max_workers: int = 5) -> dict:
-        """Generate prompts for all agents using parallel API calls."""
-        prompts = {}
-        total = len(AGENT_ROLES)
-        
-        print(f"Generating {total} prompts using GPT API ({self.model})...")
-        print(f"Using {max_workers} parallel workers\n")
-        
-        def generate_one(args):
-            idx, (role_name, responsibility) = args
-            prompt = self.generate_single_prompt(role_name, responsibility)
-            return idx, role_name, prompt
-        
-        with ThreadPoolExecutor(max_workers=max_workers) as executor:
-            futures = {
-                executor.submit(generate_one, (i, role)): i 
-                for i, role in enumerate(AGENT_ROLES)
-            }
-            
-            completed = 0
-            for future in as_completed(futures):
-                idx, role_name, prompt = future.result()
-                prompts[role_name] = prompt
-                completed += 1
-                print(f"  [{completed}/{total}] Generated: {role_name}")
-        
-        return prompts
 
 
 # ============== Helper Functions ==============
@@ -428,18 +483,180 @@ def get_extractor_prompt(task_name: str) -> str:
         return EXTRACTOR_PROMPTS["MBPP"]
 
 
+def get_structured_output_instructions(task_name: str) -> str:
+    """Get the appropriate structured output instructions for a task/benchmark."""
+    # Try exact match first
+    if task_name in STRUCTURED_OUTPUT_INSTRUCTIONS:
+        return STRUCTURED_OUTPUT_INSTRUCTIONS[task_name]
+    
+    # Try case-insensitive match
+    task_upper = task_name.upper()
+    for key in STRUCTURED_OUTPUT_INSTRUCTIONS:
+        if key.upper() == task_upper:
+            return STRUCTURED_OUTPUT_INSTRUCTIONS[key]
+    
+    # Fallback by keyword
+    task_lower = task_name.lower()
+    if "math" in task_lower:
+        return STRUCTURED_OUTPUT_INSTRUCTIONS["MATH"]
+    elif "crux" in task_lower:
+        return STRUCTURED_OUTPUT_INSTRUCTIONS["CRUX-O"]
+    else:
+        return STRUCTURED_OUTPUT_DEFAULT
+
+
 def build_first_agent_prompt(agent_prompt: str, task_name: str) -> str:
     """Build prompt for the first agent in workflow (includes task description)."""
     task_desc = get_task_description(task_name)
-    return f"{task_desc}\n\n{agent_prompt}\n\n{STRUCTURED_OUTPUT_INSTRUCTION}{STRUCTURED_OUTPUT_FORMAT}"
+    output_instructions = get_structured_output_instructions(task_name)
+    return f"{agent_prompt}\n\n{task_desc}\n{output_instructions}"
 
 
-def build_agent_prompt(agent_prompt: str) -> str:
+def build_agent_prompt(agent_prompt: str, task_name: str = "MBPP") -> str:
     """Build prompt for non-first agents (includes structured format instructions)."""
-    return f"{agent_prompt}\n\n{STRUCTURED_OUTPUT_INSTRUCTION}{STRUCTURED_OUTPUT_FORMAT}"
+    output_instructions = get_structured_output_instructions(task_name)
+    return f"{agent_prompt}\n{output_instructions}"
 
 
-# ============== Save Functions ==============
+# ============== GPT-based Prompt Generation ==============
+
+PROMPT_GENERATION_SYSTEM = """You are an expert prompt engineer designing system prompts for AI agents in a multi-agent workflow.
+
+CONTEXT:
+- Agents exchange structured YAML messages with fields: problem:, work:, comment:, answer:.
+- work: is private reasoning and never forwarded; final solutions must NOT be placed there.
+- comment: is 1-3 short notes for the next agent (edges, risks, status of answer).
+- answer: is the only solution field forwarded.
+
+answer: RULES (role_mode is provided in the user message — never re-infer):
+- IMPLEMENTATION roles: always place the full solution in answer:. If a prior answer exists, rewrite or improve it; never drop it or move it to work:. Do not leave answer: blank.
+- VERIFICATION/ANALYSIS roles: if a prior answer exists, copy it into answer: and adjust only if needed. If no prior answer exists, leave answer: blank; do NOT invent a solution.
+
+PROMPT REQUIREMENTS:
+- State the agent identity/role in 1-2 sentences.
+- Explain how to use problem:, comment:, answer: from the previous agent.
+- Restate the required answer: behavior per role_mode above.
+- Task-agnostic, concise (format instructions will be appended separately).
+- Do NOT add formatting beyond plain text."""
+
+PROMPT_GENERATION_USER_TEMPLATE = """Generate a system prompt for this agent:
+
+ROLE NAME: {role_name}
+RESPONSIBILITY: {responsibility}
+ROLE MODE: {role_mode}  # implementation=create/refresh solutions, verification=copy/fix existing answers only
+
+Use the provided ROLE MODE (do not re-infer) to describe answer: handling:
+- IMPLEMENTATION: always put the full solution in answer:; if a prior answer exists, rewrite/improve it, never drop it.
+- VERIFICATION: if a prior answer exists, copy it into answer: and only change it when needed; if none exists, leave answer: blank and focus on analysis.
+
+The prompt should:
+1. Define the agent's identity and role clearly (1-2 sentences)
+2. Explain what the agent does with problem:, comment:, and answer: from input
+3. Restate the required answer: behavior from ROLE MODE
+4. Be task-agnostic (works for any benchmark)
+5. Be concise - the format instructions will be appended separately
+
+Generate ONLY the system prompt text (without format instructions), nothing else."""
+
+
+class GPTPromptGenerator:
+    """Generate agent prompts using GPT API."""
+    
+    def __init__(self, model: str = "gpt-4o-mini", api_key: str = None):
+        if OpenAI is None:
+            raise ImportError("openai package is required for GPT prompt generation. Install with: pip install openai")
+        
+        self.model = model
+        
+        # Try to get API key from various sources
+        if api_key:
+            self.client = OpenAI(api_key=api_key)
+        else:
+            # Try config first
+            try:
+                from src.config import OPENAI_API_KEY
+                if OPENAI_API_KEY:
+                    self.client = OpenAI(api_key=OPENAI_API_KEY)
+                    return
+            except ImportError:
+                pass
+            
+            # Try environment variable
+            env_key = os.getenv("OPENAI_API_KEY")
+            if env_key:
+                self.client = OpenAI(api_key=env_key)
+            else:
+                raise ValueError(
+                    "No OpenAI API key found. Set OPENAI_API_KEY environment variable "
+                    "or pass api_key parameter."
+                )
+    
+    def generate_single_prompt(self, role_name: str, responsibility: str) -> str:
+        """Generate a prompt for a single agent role. GPT decides if it's verification or implementation."""
+        behavior = determine_role_behavior(role_name)
+        role_mode = "implementation" if behavior == "create" else "verification"
+        user_content = PROMPT_GENERATION_USER_TEMPLATE.format(
+            role_name=role_name,
+            responsibility=responsibility,
+            role_mode=role_mode,
+        )
+        
+        response = self.client.chat.completions.create(
+            model=self.model,
+            messages=[
+                {"role": "system", "content": PROMPT_GENERATION_SYSTEM},
+                {"role": "user", "content": user_content}
+            ],
+            temperature=0.2,
+            max_tokens=500,
+        )
+        return response.choices[0].message.content.strip()
+    
+    def generate_all_prompts(self, max_workers: int = 5) -> Dict[str, str]:
+        """Generate prompts for all agents using parallel API calls."""
+        prompts = {}
+        total = len(AGENT_ROLES)
+        
+        print(f"Generating {total} prompts using GPT API ({self.model})...")
+        print(f"Using {max_workers} parallel workers\n")
+        
+        def generate_one(args):
+            idx, (role_name, responsibility) = args
+            prompt = self.generate_single_prompt(role_name, responsibility)
+            return idx, role_name, prompt
+        
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            futures = {
+                executor.submit(generate_one, (i, role)): i 
+                for i, role in enumerate(AGENT_ROLES)
+            }
+            
+            completed = 0
+            for future in as_completed(futures):
+                try:
+                    idx, role_name, prompt = future.result()
+                    prompts[role_name] = prompt
+                    completed += 1
+                    print(f"  [{completed}/{total}] Generated: {role_name}")
+                except Exception as e:
+                    print(f"  ✗ Error: {e}")
+        
+        return prompts
+
+
+def generate_prompts_template() -> Dict[str, str]:
+    """
+    Generate prompts deterministically using templates and role behaviors.
+    Avoids reliance on external APIs and enforces strict answer: field handling.
+    """
+    prompts: Dict[str, str] = {}
+    for role_name, responsibility in AGENT_ROLES:
+        behavior = determine_role_behavior(role_name)
+        prompts[role_name] = build_role_prompt(role_name, responsibility, behavior)
+    return prompts
+
+
+# ============== YAML Save/Load Functions ==============
 
 def save_prompts_to_yaml(prompts: dict, output_path: Optional[str] = None):
     """Save all generated prompts to YAML file."""
@@ -449,16 +666,17 @@ def save_prompts_to_yaml(prompts: dict, output_path: Optional[str] = None):
     output = {
         "agents": prompts,
         "task_descriptions": TASK_DESCRIPTIONS,
+        "structured_output_instructions": STRUCTURED_OUTPUT_INSTRUCTIONS,
         "extractors": EXTRACTOR_PROMPTS,
     }
     
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     with open(output_path, 'w', encoding='utf-8') as f:
         f.write("# Prompt Configuration for Evolving Workflows\n")
-        f.write("# Generated by generate_prompts.py using GPT API\n")
+        f.write("# Generated by generate_prompts.py\n")
         f.write("# Agent prompts are task-agnostic\n")
         f.write("# Task descriptions are appended to first agent only\n")
-        f.write("# Extractors are dataset-specific\n\n")
+        f.write("# Structured output instructions are dataset-specific\n\n")
         yaml.dump(output, f, default_flow_style=False, allow_unicode=True, sort_keys=False)
     
     print(f"\n✓ Saved prompts to {output_path}")
@@ -479,11 +697,13 @@ def print_stats(prompts: dict):
     print("\n=== Prompt Generation Statistics ===")
     print(f"Total Agent Roles: {len(prompts)}")
     print(f"Task Descriptions: {len(TASK_DESCRIPTIONS)}")
+    print(f"Structured Output Formats: {len(STRUCTURED_OUTPUT_INSTRUCTIONS)}")
     print(f"Extractor Types: {len(EXTRACTOR_PROMPTS)}")
     print("\nAgent Roles:")
     for i, role in enumerate(prompts.keys(), 1):
         print(f"  {i:2d}. {role}")
     print("\nTasks:", ", ".join(TASK_DESCRIPTIONS.keys()))
+    print("Structured Output Formats:", ", ".join(STRUCTURED_OUTPUT_INSTRUCTIONS.keys()))
     print("Extractors:", ", ".join(EXTRACTOR_PROMPTS.keys()))
 
 
@@ -493,27 +713,22 @@ if __name__ == "__main__":
     import argparse
     
     parser = argparse.ArgumentParser(description="Generate agent prompts using GPT API")
-    parser.add_argument("--model", default="gpt-4o-mini", help="GPT model to use")
-    parser.add_argument("--workers", type=int, default=5, help="Number of parallel workers")
+    parser.add_argument("--model", default="gpt-4o-mini", help="GPT model to use (for --method gpt)")
+    parser.add_argument("--workers", type=int, default=5, help="Number of parallel workers (gpt mode only)")
     parser.add_argument("--output", default=None, help="Output YAML path")
-    parser.add_argument("--no-api", action="store_true", help="Use template fallback instead of API")
+    parser.add_argument("--method", choices=["template", "gpt"], default="template", help="Prompt generation method")
     args = parser.parse_args()
     
     print("🚀 Generating Prompts for Evolving Workflows...")
-    print(f"   Model: {args.model}")
-    print(f"   Workers: {args.workers}")
+    print(f"   Method: {args.method}")
+    if args.method == "gpt":
+        print(f"   Model: {args.model}")
+        print(f"   Workers: {args.workers}")
     print()
     
-    if args.no_api:
-        # Use fallback templates
-        print("Using template fallback (--no-api flag)")
-        generator = GPTPromptGenerator(model=args.model)
-        prompts = {}
-        for role_name, responsibility in AGENT_ROLES:
-            prompts[role_name] = generator._fallback_prompt(role_name, responsibility)
-            print(f"  Generated: {role_name}")
+    if args.method == "template":
+        prompts = generate_prompts_template()
     else:
-        # Use GPT API
         generator = GPTPromptGenerator(model=args.model)
         prompts = generator.generate_all_prompts(max_workers=args.workers)
     

@@ -42,7 +42,7 @@ class MathAlgebraDataset(BaseDataset):
             for item in split_data:
                 # Filter for Level 5 only
                 level = item.get("level", "")
-                if level != "Level 5":
+                if level != "Level 3":
                     continue
                 
                 # Build the prompt from the problem

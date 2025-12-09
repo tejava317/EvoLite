@@ -91,8 +91,8 @@ class MBPPDataset(BaseDataset):
         test_cases = problem.ground_truth["test_list"]
         test_imports = problem.metadata.get("test_imports", [])
         
-        # Execute and check if all tests pass
-        return execute_code(code, test_cases, test_imports)
+        # Execute and check if all tests pass (1 second timeout - if it takes longer, it's wrong)
+        return execute_code(code, test_cases, test_imports, timeout=1)
     
     def _extract_code(self, response: str) -> Optional[str]:
         """Extract Python code from a response that may contain markdown."""

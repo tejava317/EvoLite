@@ -2,8 +2,8 @@
 """
 FastAPI Evaluation Server for EvoLite.
 
-High-throughput evaluation using RunPod's native async API.
-Fire-all-at-once pattern for maximum parallelism.
+High-throughput evaluation using vLLM batch completions API.
+Processes all problems per agent step in a single batched request.
 
 Works with the new BlockWorkflow system.
 
@@ -16,20 +16,19 @@ import time
 import os
 import json
 import uuid
-from typing import Optional, List, Union
+from typing import Optional, List
 from contextlib import asynccontextmanager
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 import logging
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
 import re
-from src.llm.runpod_client import RunPodAsyncClient, JobResult
+from src.llm.vllm_client import VLLMClient, JobResult
 from src.datasets import MBPPDataset, MathAlgebraDataset, CRUXOpenDataset
 from src.datasets.base import Problem
 from src.evaluation.executor import execute_code
-from src.config import get_predefined_prompt, BASE_AGENTS, INITIAL_PROMPTS
 
 
 # ============== Pydantic Models ==============
@@ -97,6 +96,7 @@ class EvaluateResponse(BaseModel):
     num_correct: int
     num_problems: int
     total_tokens: int
+    completion_tokens: int  # Generated tokens only (excludes prompts)
     total_time: float
     tokens_per_second: float
     problems: List[ProblemResult]
@@ -108,7 +108,7 @@ class EvaluateResponse(BaseModel):
 class ServerState:
     """Cached server state."""
     datasets: dict = None
-    runpod_client: RunPodAsyncClient = None
+    vllm_client: VLLMClient = None
     extractor_prompts: dict = None
 
 
@@ -122,15 +122,20 @@ async def lifespan(app: FastAPI):
     """Load resources at startup, cleanup at shutdown."""
     print("🚀 Starting Evaluation Server...")
     
-    # Initialize RunPod client with monitoring enabled
-    state.runpod_client = RunPodAsyncClient(
-        default_temperature=0.1,
-        default_max_tokens=2000,
-        poll_interval=0.3,
-        max_poll_time=3600,  # 1 hour timeout window
-        enable_monitoring=True,
+    # Initialize vLLM client
+    base_url = os.getenv("VLLM_BASE_URL", "http://38.128.232.68:27717/v1")
+    model = os.getenv("VLLM_MODEL", "Qwen/Qwen3-0.6B")
+    
+    state.vllm_client = VLLMClient(
+        base_url=base_url,
+        model=model,
+        default_temperature=0.6,
+        default_max_tokens=2048,  # Room for prompts within 6000 context
+        timeout=600.0,  # 10 minutes for large batches
     )
-    print("✓ RunPod client initialized (monitoring enabled)")
+    print(f"✓ vLLM client initialized")
+    print(f"  URL: {base_url}")
+    print(f"  Model: {model}")
     
     # Pre-load datasets
     print("📂 Loading datasets...")
@@ -162,24 +167,27 @@ async def lifespan(app: FastAPI):
     
     # Cache extractor prompts (keyed by benchmark name)
     state.extractor_prompts = {
-        "MBPP": """Extract the Python function.
+        "MBPP": """Extract the Python function code.
 
-OUTPUT: Raw code starting with "def" or "import". No markdown, no explanation.
+INPUT: def add(a, b): return a + b
+OUTPUT: def add(a, b): return a + b
 
-Example:
-def remove_Occ(s, ch):
-    s = s.replace(ch, '', 1)
-    return s[::-1].replace(ch, '', 1)[::-1]""",
-        "MATH": """Extract the final answer.
+Extract function (no markdown):""",
+        "MATH": """Extract the \\boxed{} answer.
 
-OUTPUT: \\boxed{answer} only.
+INPUT: \\boxed{42}
+OUTPUT: \\boxed{42}
 
-Examples: \\boxed{2}, \\boxed{\\frac{3}{4}}, \\boxed{x \\in [-2,7]}""",
+INPUT: \\boxed{\\frac{3}{4}}
+OUTPUT: \\boxed{\\frac{3}{4}}
+
+Extract boxed answer:""",
         "CRUX-O": """Extract the output value.
 
-OUTPUT: Python literal only. No "assert", no explanation.
+INPUT: Result is [(4, 1)]
+OUTPUT: [(4, 1)]
 
-Examples: [(4, 1), (2, 3)], 'hello', {1: None}, False"""
+Extract Python literal:"""
     }
     
     print("✓ Server ready!")
@@ -188,16 +196,16 @@ Examples: [(4, 1), (2, 3)], 'hello', {1: None}, False"""
     
     # Cleanup
     print("🛑 Shutting down...")
-    if state.runpod_client:
-        await state.runpod_client.close()
+    if state.vllm_client:
+        await state.vllm_client.close()
 
 
 # ============== FastAPI App ==============
 
 app = FastAPI(
     title="EvoLite Evaluation Server",
-    description="High-throughput BlockWorkflow evaluation using RunPod async API",
-    version="2.0.0",
+    description="High-throughput BlockWorkflow evaluation using vLLM batch completions",
+    version="3.0.0",
     lifespan=lifespan
 )
 
@@ -212,184 +220,77 @@ class _EndpointFilter(logging.Filter):
 logging.getLogger("uvicorn.access").addFilter(_EndpointFilter())
 
 
-# ============== Helper Functions ==============
+# ============== Prompt System (imports from generate_prompts.py) ==============
+
+from src.utils.generate_prompts import (
+    STRUCTURED_OUTPUT_INSTRUCTIONS,
+    TASK_DESCRIPTIONS,
+    EXTRACTOR_PROMPTS,
+    AGENT_ROLES,
+    get_task_description,
+    get_extractor_prompt as _get_extractor_prompt,
+    get_structured_output_instructions,
+    build_first_agent_prompt,
+    build_agent_prompt,
+    load_prompts_from_yaml,
+)
+
+# Build role description lookup
+ROLE_DESCRIPTIONS = {name.lower(): desc for name, desc in AGENT_ROLES}
 
 # Load GPT-generated prompts from YAML
 GENERATED_PROMPTS = {}
-GENERATED_TASK_DESCRIPTIONS = {}
-GENERATED_EXTRACTORS = {}
 
 try:
-    from src.utils.generate_prompts import load_prompts_from_yaml, get_task_description as gen_task_desc
     _loaded = load_prompts_from_yaml()
     if _loaded:
         GENERATED_PROMPTS = {k.lower(): v for k, v in _loaded.get("agents", {}).items()}
-        GENERATED_TASK_DESCRIPTIONS = _loaded.get("task_descriptions", {})
-        GENERATED_EXTRACTORS = _loaded.get("extractors", {})
         print(f"  ✓ Loaded {len(GENERATED_PROMPTS)} GPT-generated agent prompts")
-    USE_NEW_PROMPTS = bool(GENERATED_PROMPTS)
 except Exception as e:
     print(f"  ✗ Could not load generated prompts: {e}")
-    USE_NEW_PROMPTS = False
-
-
-def get_task_description(task_name: str) -> str:
-    """Get task description for a dataset."""
-    # Try loaded descriptions first
-    if task_name in GENERATED_TASK_DESCRIPTIONS:
-        return GENERATED_TASK_DESCRIPTIONS[task_name]
-    
-    # Case-insensitive match
-    for key, desc in GENERATED_TASK_DESCRIPTIONS.items():
-        if key.lower() == task_name.lower():
-            return desc
-    
-    # Fallback
-    return f"""
-=== TASK: {task_name} ===
-Goal: Complete the given task according to the problem description.
-Input: Problem description
-Output: Solution in the required format"""
-
-
-STRUCTURED_OUTPUT_INSTRUCTION = """
-**CRITICAL OUTPUT RULES:**
-
-1. [PROBLEM] - COPY VERBATIM. Include ALL text: problem description AND test cases (assert statements).
-   - The test case contains the EXACT function name you MUST use.
-   - DO NOT summarize, paraphrase, or truncate. Copy character-for-character.
-   
-2. [WORK] - Your detailed reasoning (logged only, NOT passed to next agent).
-
-3. [COMMENT] - Brief notes for the next agent (1-3 sentences). Passed forward.
-   - Use this to highlight: function name, edge cases, key insights, warnings.
-   
-4. [ANSWER] - Your concrete contribution: working code that passes the test case.
-   - Function name MUST match the test case exactly.
-   - Code must be complete and executable.
-
-Passed to next agent: [PROBLEM], [COMMENT], [ANSWER]
-NOT passed (logged only): [WORK]
-"""
-
-STRUCTURED_OUTPUT_FORMAT = """
-**OUTPUT FORMAT (MUST follow exactly):**
-
----BEGIN STRUCTURED OUTPUT---
-
-[PROBLEM]
-{COPY THE EXACT ORIGINAL PROBLEM INCLUDING TEST CASES - DO NOT MODIFY OR TRUNCATE}
-
-[WORK]
-{Your detailed analysis/reasoning - NOT passed to next agent}
-
-[COMMENT]
-{Brief notes for next agent: function name, edge cases, key insights (1-3 sentences)}
-
-[ANSWER]
-{Your working code/solution - function name MUST match the assert statement}
-
----END STRUCTURED OUTPUT---
-"""
 
 
 def get_agent_prompt(role: str, task_name: str = None, is_first_agent: bool = False) -> str:
     """
     Get prompt for an agent role with STRUCTURED OUTPUT format.
-    
-    New system:
-    - All agents must output in structured format: [PROBLEM], [INSIGHTS], [WORK], [ANSWER]
-    - Only [PROBLEM], [INSIGHTS], [ANSWER] are passed to next agent
-    - [WORK] is logged but not passed (keeps chain clean)
-    - Task description appended only for first agent
     """
-    # Try GPT-generated prompts first
-    if USE_NEW_PROMPTS:
-        role_lower = role.lower()
-        if role_lower in GENERATED_PROMPTS:
-            base_prompt = GENERATED_PROMPTS[role_lower]
-        else:
-            # Try partial match
-            for key, prompt in GENERATED_PROMPTS.items():
-                if role_lower in key or key in role_lower:
-                    base_prompt = prompt
-                    break
-            else:
-                # Generate generic prompt for unknown roles
-                base_prompt = f"""You are a **{role}** in a multi-agent workflow.
-
-You will receive input containing [PROBLEM] and [ANSWER] sections.
-
-YOUR TASK:
-1. Read [PROBLEM] - this is the original task (copy it EXACTLY to your output)
-2. Consider [ANSWER] from previous agents
-3. Do your work based on your role as {role}
-4. Output your contribution in the structured format"""
-        
-        # Append task description for first agent
-        if is_first_agent and task_name:
-            task_desc = get_task_description(task_name)
-            return f"{task_desc}\n\n{base_prompt}\n\n{STRUCTURED_OUTPUT_INSTRUCTION}{STRUCTURED_OUTPUT_FORMAT}"
-        
-        # Non-first agents also get the structured format requirement
-        return f"{base_prompt}\n\n{STRUCTURED_OUTPUT_INSTRUCTION}{STRUCTURED_OUTPUT_FORMAT}"
+    role_lower = role.lower()
+    base_prompt = GENERATED_PROMPTS.get(role_lower)
     
-    # Fallback to old system with structured format
-    prompt = get_predefined_prompt(role, task_name)
-    if prompt:
-        return f"{prompt}\n\n{STRUCTURED_OUTPUT_INSTRUCTION}{STRUCTURED_OUTPUT_FORMAT}"
+    # Try partial match if exact match not found
+    if base_prompt is None:
+        for key, prompt in GENERATED_PROMPTS.items():
+            if role_lower in key or key in role_lower:
+                base_prompt = prompt
+                break
     
-    fallback = f"""You are a **{role}** in a multi-agent workflow.
-
-You will receive input containing [PROBLEM] and [ANSWER] sections.
-
-YOUR TASK:
-1. Read [PROBLEM] - copy it EXACTLY to your output
-2. Consider [ANSWER] from previous agents  
-3. Do your work based on your role
-4. Output your contribution"""
+    if base_prompt is None:
+        raise ValueError(f"Unknown agent role: {role}. Regenerate prompts with generate_prompts.py")
     
-    return f"{fallback}\n\n{STRUCTURED_OUTPUT_INSTRUCTION}{STRUCTURED_OUTPUT_FORMAT}"
+    if is_first_agent and task_name:
+        return build_first_agent_prompt(base_prompt, task_name)
+    return build_agent_prompt(base_prompt, task_name or "MBPP")
 
 
 def get_extractor_prompt(task_name: str) -> str:
     """Get extractor prompt for task/benchmark."""
-    # Try exact match in generated extractors first
-    if USE_NEW_PROMPTS and GENERATED_EXTRACTORS:
-        if task_name in GENERATED_EXTRACTORS:
-            return GENERATED_EXTRACTORS[task_name]
-        # Try case variations
-        for key in GENERATED_EXTRACTORS:
-            if key.upper() == task_name.upper():
-                return GENERATED_EXTRACTORS[key]
+    prompt = _get_extractor_prompt(task_name)
+    if prompt:
+        return prompt
     
-    # Try exact match in cached prompts
     if task_name in state.extractor_prompts:
         return state.extractor_prompts[task_name]
     
-    # Try case variations
     for key in state.extractor_prompts:
         if key.upper() == task_name.upper():
             return state.extractor_prompts[key]
     
-    # Fallback by keyword
-    task_lower = task_name.lower()
-    if "math" in task_lower:
-        return state.extractor_prompts["MATH"]
-    if "crux" in task_lower:
-        return state.extractor_prompts["CRUX-O"]
-    return state.extractor_prompts["MBPP"]
+    return state.extractor_prompts.get("MBPP", "")
 
 
-def expand_blocks_to_roles(blocks: List[BlockConfig], client: RunPodAsyncClient = None) -> List[str]:
+def expand_blocks_to_roles(blocks: List[BlockConfig]) -> List[str]:
     """
     Expand block configuration to a list of agent roles.
-    
-    For agent blocks: just return the role
-    For composite blocks: return [divider, inner_role1, inner_role2, ..., synthesizer]
-    
-    Note: For async expansion of composite blocks, we'd need an LLM call.
-    For simplicity, we use default inner roles for composite blocks.
     """
     roles = []
     
@@ -398,10 +299,7 @@ def expand_blocks_to_roles(blocks: List[BlockConfig], client: RunPodAsyncClient 
             if block.role:
                 roles.append(block.role)
         elif block.type == "composite":
-            # Composite block expands to: divider -> [inner roles] -> synthesizer
-            # Default inner roles (in production, these would be dynamically generated)
             roles.append(block.divider_role or "Divider")
-            # Add default inner roles for composite block
             roles.extend(["Business Analyst", "Technical Lead", "Quality Assurance"])
             roles.append(block.synth_role or "Synthesizer")
     
@@ -412,7 +310,7 @@ def expand_blocks_to_roles(blocks: List[BlockConfig], client: RunPodAsyncClient 
 _log_locks: dict[str, asyncio.Lock] = {}
 _log_locks_lock = asyncio.Lock()
 
-# In-memory storage for problem logs (grouped by request_id -> problem_id)
+# In-memory storage for problem logs
 _problem_logs: dict[str, dict[str, dict]] = {}
 
 
@@ -431,11 +329,9 @@ async def log_agent_output(request_id: str, record: dict):
     async with lock:
         problem_id = record.get("problem_id", "unknown")
         
-        # Initialize storage for this request if needed
         if request_id not in _problem_logs:
             _problem_logs[request_id] = {}
         
-        # Initialize storage for this problem if needed
         if problem_id not in _problem_logs[request_id]:
             _problem_logs[request_id][problem_id] = {
                 "problem_id": problem_id,
@@ -449,7 +345,6 @@ async def log_agent_output(request_id: str, record: dict):
         
         prob_log = _problem_logs[request_id][problem_id]
         
-        # Add agent step
         step = {
             "stage": record.get("stage", 0),
             "role": record.get("role", "unknown"),
@@ -463,13 +358,18 @@ async def log_agent_output(request_id: str, record: dict):
             "error": record.get("error"),
         }
         
-        # Add parsed sections if available (for structured output)
-        if record.get("parsed_problem"):
+        # Always include parsed data if any field was extracted
+        parsed_problem = record.get("parsed_problem", "")
+        parsed_work = record.get("parsed_work", "")
+        parsed_comment = record.get("parsed_comment", "")
+        parsed_answer = record.get("parsed_answer", "")
+        
+        if parsed_problem or parsed_work or parsed_comment or parsed_answer:
             step["parsed"] = {
-                "problem": record.get("parsed_problem", ""),
-                "work": record.get("parsed_work", ""),
-                "comment": record.get("parsed_comment", ""),
-                "answer": record.get("parsed_answer", ""),
+                "problem": parsed_problem,
+                "work": parsed_work,
+                "comment": parsed_comment,
+                "answer": parsed_answer,
             }
         
         if record.get("is_extractor"):
@@ -489,7 +389,7 @@ async def finalize_problem_log(request_id: str, problem_id: str, expected_answer
 
 
 async def save_request_logs(request_id: str, request_ts: str):
-    """Save all problem logs for a request to a single JSON file (grouped by problem)."""
+    """Save all problem logs for a request to a single JSON file."""
     lock = await _get_log_lock(request_id)
     
     async with lock:
@@ -501,11 +401,9 @@ async def save_request_logs(request_id: str, request_ts: str):
             path = os.path.join(dir_path, f"{request_id}.json")
             os.makedirs(dir_path, exist_ok=True)
             
-            # Convert to list sorted by problem_id
             problems = list(_problem_logs[request_id].values())
             problems.sort(key=lambda x: x["problem_id"])
             
-            # Format for readability
             output = {
                 "request_id": request_id,
                 "timestamp": request_ts,
@@ -519,46 +417,7 @@ async def save_request_logs(request_id: str, request_ts: str):
         
         await asyncio.to_thread(_write)
         
-        # Clean up memory
         del _problem_logs[request_id]
-
-
-async def expand_composite_block_async(
-    block: BlockConfig,
-    client: RunPodAsyncClient,
-    context: str = ""
-) -> List[str]:
-    """
-    Dynamically expand a composite block using LLM to determine inner roles.
-    """
-    divider_prompt = f"""You are a task divider. Given a task, identify 3 specific roles needed to complete it effectively.
-
-Task context: {context if context else "General software development task"}
-
-List exactly 3 roles, one per line. Just the role names, nothing else."""
-
-    result = await client.generate(
-        system_prompt="You are a helpful assistant that identifies team roles.",
-        user_content=divider_prompt
-    )
-    
-    if result.status != "COMPLETED":
-        # Fallback to default roles
-        return ["Business Analyst", "Technical Lead", "Quality Assurance"]
-    
-    # Parse roles from response
-    lines = result.content.strip().split("\n")
-    inner_roles = []
-    for line in lines[:3]:
-        # Clean up the line (remove numbers, bullets, etc.)
-        role = line.strip().lstrip("0123456789.-) ").strip()
-        if role:
-            inner_roles.append(role)
-    
-    if len(inner_roles) < 3:
-        inner_roles.extend(["Business Analyst", "Technical Lead", "Quality Assurance"][:3 - len(inner_roles)])
-    
-    return inner_roles
 
 
 def get_think_suffix(think: bool) -> str:
@@ -570,11 +429,15 @@ def get_think_suffix(think: bool) -> str:
 
 def parse_structured_output(output: str) -> dict:
     """
-    Parse the structured output from an agent.
+    Parse the structured YAML output from an agent.
     
-    Returns dict with keys: problem, work, comment, answer, raw
-    If parsing fails, returns the raw output in answer field.
+    Strips <think>...</think> blocks before parsing to avoid matching
+    content from the model's internal reasoning.
+    
+    Handles both YAML format and legacy bracket format for backwards compatibility.
     """
+    import yaml as yaml_lib
+    
     result = {
         "problem": "",
         "work": "",
@@ -584,253 +447,420 @@ def parse_structured_output(output: str) -> dict:
         "parsed": False,
     }
     
-    # Try to parse structured format
-    # Look for [SECTION] markers
-    sections = {
-        "problem": r'\[PROBLEM\]\s*(.*?)(?=\[WORK\]|\[COMMENT\]|\[ANSWER\]|---END|$)',
-        "work": r'\[WORK\]\s*(.*?)(?=\[COMMENT\]|\[ANSWER\]|---END|$)',
-        "comment": r'\[COMMENT\]\s*(.*?)(?=\[ANSWER\]|---END|$)',
-        "answer": r'\[ANSWER\]\s*(.*?)(?=---END|$)',
-    }
+    # Remove <think>...</think> blocks before parsing
+    clean_output = re.sub(r'<think>.*?</think>', '', output, flags=re.DOTALL)
     
-    for key, pattern in sections.items():
-        match = re.search(pattern, output, re.DOTALL | re.IGNORECASE)
-        if match:
-            result[key] = match.group(1).strip()
-            result["parsed"] = True
+    # Method 1: Try to extract content from ```yaml ... ``` block
+    # Use GREEDY match to get ALL content up to the LAST closing ```
+    # This handles cases where model incorrectly nests ```python inside yaml
+    yaml_match = re.search(r'```yaml\s*(.*?)```(?![\w])', clean_output, re.DOTALL)
+    yaml_content = yaml_match.group(1) if yaml_match else None
     
-    # If no structured format found, treat entire output as answer
+    # If we got truncated content (answer is empty but there's more ```), try greedy
+    if yaml_content and 'answer: |' in yaml_content:
+        # Check if answer appears empty (just whitespace after |)
+        answer_check = re.search(r'answer:\s*\|\s*\n(\s*)$', yaml_content)
+        if answer_check:
+            # Try greedy match - get content up to the LAST ``` in the output
+            greedy_match = re.search(r'```yaml\s*(.*)\n```', clean_output, re.DOTALL)
+            if greedy_match:
+                yaml_content = greedy_match.group(1)
+    
+    # Method 1b: Strip nested code fences from yaml content before parsing
+    if yaml_content:
+        # Remove ```python, ```javascript, etc. fences inside the yaml
+        yaml_content = re.sub(r'```\w*\n?', '', yaml_content)
+    
+    # Method 2: Look for YAML keys directly in the text (key: | or key: value)
+    # This handles cases where model outputs YAML without code fences
+    if not yaml_content:
+        # Check if text looks like YAML (has our expected keys followed by : or :|)
+        if re.search(r'^(problem|work|comment|answer)\s*:\s*[|\n]', clean_output, re.MULTILINE | re.IGNORECASE):
+            yaml_content = clean_output
+            # Also strip nested fences
+            yaml_content = re.sub(r'```\w*\n?', '', yaml_content)
+    
+    # Try parsing as YAML
+    if yaml_content:
+        try:
+            parsed_yaml = yaml_lib.safe_load(yaml_content)
+            if isinstance(parsed_yaml, dict):
+                for key in ["problem", "work", "comment", "answer"]:
+                    if key in parsed_yaml and parsed_yaml[key]:
+                        result[key] = str(parsed_yaml[key]).strip()
+                        result["parsed"] = True
+        except:
+            pass
+    
+    # Method 3: Try regex extraction for YAML-style keys (more permissive)
+    if not result["parsed"] or not result.get("answer"):
+        # Match "key: |" or "key:" followed by content
+        for key in ["problem", "work", "comment", "answer"]:
+            # Skip if already parsed for this key (except answer which we always try to get)
+            if key != "answer" and result.get(key):
+                continue
+                
+            # Pattern 1: key: | followed by INDENTED lines (proper YAML)
+            pattern = rf'{key}\s*:\s*\|\s*\n((?:[ \t]+.*\n?)*)'
+            match = re.search(pattern, clean_output, re.IGNORECASE)
+            if match and match.group(1).strip():
+                # Remove leading indentation
+                content = re.sub(r'^[ \t]+', '', match.group(1), flags=re.MULTILINE)
+                result[key] = content.strip()
+                result["parsed"] = True
+            else:
+                # Pattern 2: key: | followed by UNINDENTED content (model didn't indent properly)
+                # This handles cases like "answer: |\ndef foo():" 
+                pattern = rf'{key}\s*:\s*\|\s*\n((?:(?!(?:problem|work|comment|answer)\s*:).*\n?)*)'
+                match = re.search(pattern, clean_output, re.IGNORECASE)
+                if match and match.group(1).strip():
+                    content = match.group(1).strip()
+                    # Remove trailing ``` if present
+                    content = re.sub(r'\n?```\s*$', '', content)
+                    result[key] = content.strip()
+                    result["parsed"] = True
+                else:
+                    # Pattern 3: Try single-line value: key: value (until next key or end)
+                    pattern = rf'{key}\s*:\s*(.+?)(?=\n(?:problem|work|comment|answer)\s*:|$)'
+                    match = re.search(pattern, clean_output, re.IGNORECASE | re.DOTALL)
+                    if match:
+                        result[key] = match.group(1).strip()
+                        result["parsed"] = True
+    
+    # Method 4: Try legacy bracket format [PROBLEM], [WORK], etc.
     if not result["parsed"]:
-        result["answer"] = output.strip()
+        sections = {
+            "problem": r'\[PROBLEM\]\s*(.*?)(?=\[WORK\]|\[COMMENT\]|\[ANSWER\]|\[PREVIOUS|NOTE:|$)',
+            "work": r'\[WORK\]\s*(.*?)(?=\[COMMENT\]|\[ANSWER\]|\[PREVIOUS|NOTE:|$)',
+            "comment": r'\[COMMENT\]\s*(.*?)(?=\[ANSWER\]|\[PREVIOUS|NOTE:|$)',
+            "answer": r'\[ANSWER\]\s*(.*?)(?=\[PREVIOUS|NOTE:|$)',
+        }
+        
+        for key, pattern in sections.items():
+            match = re.search(pattern, clean_output, re.DOTALL | re.IGNORECASE)
+            if match:
+                result[key] = match.group(1).strip()
+                result["parsed"] = True
+    
+    # If still no structured format found, use cleaned output as answer
+    if not result["parsed"]:
+        result["answer"] = clean_output.strip()
     
     return result
 
 
-def build_passthrough_input(original_problem: str, parsed_output: dict) -> str:
+def build_passthrough_input(
+    original_problem: str, 
+    parsed_output: dict, 
+    prev_role: str = "previous agent",
+    current_role: str = "",
+    current_role_desc: str = "",
+) -> str:
     """
-    Build the input for the next agent using PROBLEM, COMMENT, and ANSWER.
-    
-    [WORK] is intentionally excluded to keep the chain clean.
+    Build the input for the next agent in YAML format.
     """
-    # If we have a properly parsed problem, use it
-    problem = parsed_output.get("problem", "").strip()
-    if not problem:
-        problem = original_problem
-    
+    problem = parsed_output.get("problem", "").strip() or original_problem
     comment = parsed_output.get("comment", "").strip()
     answer = parsed_output.get("answer", "").strip()
     
-    # Build the input for next agent
-    parts = ["---BEGIN STRUCTURED OUTPUT---", "", "[PROBLEM]", problem, ""]
+    # Indent multi-line content for YAML
+    def indent(text, spaces=2):
+        return "\n".join(" " * spaces + line for line in text.split("\n"))
+    
+    lines = []
+    
+    # Role reminder first
+    if current_role:
+        lines.append(f"# YOUR ROLE: {current_role}")
+        if current_role_desc:
+            lines.append(f"# {current_role_desc}")
+        lines.append("")
+    
+    lines.extend([
+        "# Input from previous agent",
+        f"from: {prev_role}",
+        "",
+        "problem: |",
+        indent(problem),
+    ])
     
     if comment:
-        parts.extend(["[COMMENT]", comment, ""])
+        lines.extend(["", "previous_comment: |", indent(comment)])
     
     if answer:
-        parts.extend(["[ANSWER]", answer, ""])
+        lines.extend(["", "previous_answer: |", indent(answer)])
+    else:
+        lines.extend(["", "previous_answer: null  # No answer yet"])
     
-    parts.append("---END STRUCTURED OUTPUT---")
+    return "\n".join(lines)
+
+
+def format_first_agent_input(
+    problem_prompt: str,
+    current_role: str = "",
+    current_role_desc: str = "",
+) -> str:
+    """
+    Format the problem prompt for the first agent in YAML format.
+    """
+    # Indent the problem for YAML
+    indented_problem = "\n".join("  " + line for line in problem_prompt.split("\n"))
     
-    return "\n".join(parts)
+    lines = []
+    
+    # Role reminder first
+    if current_role:
+        lines.append(f"# YOUR ROLE: {current_role}")
+        if current_role_desc:
+            lines.append(f"# {current_role_desc}")
+        lines.append("")
+    
+    lines.extend([
+        "# You are the first agent in the workflow",
+        "from: system",
+        "",
+        "problem: |",
+        indented_problem,
+        "",
+        "previous_answer: null  # You are the first agent, no previous answer exists",
+    ])
+    
+    return "\n".join(lines)
 
 
-def format_first_agent_input(problem_prompt: str) -> str:
-    """
-    Format the problem prompt as structured input for the first agent.
-    """
-    return f"""---BEGIN STRUCTURED OUTPUT---
+# ============== Batched Workflow Execution ==============
 
-[PROBLEM]
-{problem_prompt}
-
-[ANSWER]
-<PUT YOUR ANSWER HERE - DO NOT LEAVE THIS PLACEHOLDER>
-
----END STRUCTURED OUTPUT---"""
-
-
-async def run_workflow_on_problem(
-    problem: Problem,
+async def run_workflow_batched(
+    problems: List[Problem],
     blocks: List[BlockConfig],
     task_name: str,
     use_extractor: bool,
-    client: RunPodAsyncClient,
-    poll_interval: float = 0.01,
+    client: VLLMClient,
     request_id: str = "",
     request_ts: str = "",
     think: bool = False,
-) -> tuple[str, int, float, str]:
+) -> List[tuple[str, int, int, float, Optional[str]]]:
     """
-    Run a BlockWorkflow on a single problem using fire-and-poll with STRUCTURED OUTPUT format.
+    Run a workflow on ALL problems using batched requests.
     
-    The structured format ensures:
-    - [PROBLEM] is ALWAYS preserved and passed through unchanged
-    - [INSIGHTS] accumulates brief insights from each agent
-    - [WORK] is logged but NOT passed to next agent (keeps chain clean)
-    - [ANSWER] contains the concrete output passed forward
+    For each agent step: ONE batch request containing all N problems.
+    This is much more efficient than N individual requests.
     
-    Returns: (final_output, total_tokens, execution_time, error)
+    Returns: List of (final_output, total_tokens, completion_tokens, execution_time, error) tuples
     """
     start_time = time.time()
-    roles = expand_blocks_to_roles(blocks, client)
+    roles = expand_blocks_to_roles(blocks)
     think_suffix = get_think_suffix(think)
-
-    # Per-problem state - preserve original problem for the entire chain
-    original_problem = problem.prompt
-    current_input = format_first_agent_input(original_problem)  # Structured format for first agent
-    total_tokens = 0
-    error: Optional[str] = None
-
-    pending = []
-    # submit first role (with task description)
-    if roles:
-        prompt = get_agent_prompt(roles[0], task_name, is_first_agent=True) + think_suffix
-        job_id = await client.submit_job(
-            messages=[
-                {"role": "system", "content": prompt},
-                {"role": "user", "content": current_input},
-            ]
-        )
-        pending.append({
-            "job_id": job_id, "stage": 0, "is_extractor": False, "role": roles[0],
-            "system_prompt": prompt, "user_input": current_input, "original_problem": original_problem
-        })
-    else:
-        # no roles, go straight to extractor
+    n_problems = len(problems)
+    
+    # Initialize per-problem state
+    original_problems = [p.prompt for p in problems]
+    
+    # Build first agent input with role info
+    first_role = roles[0] if roles else ""
+    first_role_desc = ROLE_DESCRIPTIONS.get(first_role.lower(), "") if first_role else ""
+    current_inputs = [
+        format_first_agent_input(p.prompt, first_role, first_role_desc) 
+        for p in problems
+    ]
+    
+    total_tokens = [0] * n_problems
+    completion_tokens = [0] * n_problems  # Track generated tokens separately
+    errors: List[Optional[str]] = [None] * n_problems
+    parsed_outputs = [None] * n_problems  # Track parsed outputs for extractor
+    
+    # Handle case with no roles
+    if not roles:
         if use_extractor:
-            extractor_prompt = get_extractor_prompt(task_name) + think_suffix
-            job_id = await client.submit_job(
-                messages=[
+            # Extractor never uses thinking - it's just simple extraction
+            extractor_prompt = get_extractor_prompt(task_name) + " /no_think"
+            
+            # Build batch of messages for extraction
+            messages_list = [
+                [
                     {"role": "system", "content": extractor_prompt},
-                    {"role": "user", "content": original_problem},  # Extractor gets raw problem
+                    {"role": "user", "content": original_problems[i]},
                 ]
-            )
-            pending.append({
-                "job_id": job_id, "stage": 0, "is_extractor": True,
-                "system_prompt": extractor_prompt, "user_input": original_problem, "original_problem": original_problem
-            })
-        else:
-            return original_problem, total_tokens, time.time() - start_time, None
-
-    # Poll loop
-    while pending:
-        next_pending = []
-        for item in pending:
-            res = await client.poll_job_once(item["job_id"], start_time)
-            if res is None:
-                next_pending.append(item)
-                continue
-            if res.status != "COMPLETED":
-                error = res.error or f"Job failed with status {res.status}"
+                for i in range(n_problems)
+            ]
+            
+            results = await client.batch_complete(messages_list)
+            
+            outputs = []
+            for i, (problem, result) in enumerate(zip(problems, results)):
                 await log_agent_output(request_id, {
                     "problem_id": problem.id,
                     "task": task_name,
-                    "stage": item["stage"],
-                    "role": item.get("role"),
-                    "is_extractor": item["is_extractor"],
-                    "system_prompt": item.get("system_prompt", ""),
-                    "user_input": item.get("user_input", ""),
-                    "status": res.status,
-                    "error": res.error,
-                    "content": "",
-                    "tokens": 0,
-                    "elapsed": res.execution_time,
-                    "request_timestamp": request_ts,
-                })
-                continue
-
-            total_tokens += res.total_tokens
-            raw_output = res.content
-            orig_problem = item.get("original_problem", original_problem)
-
-            if item["is_extractor"]:
-                # Extractor output is final - just extract the answer
-                await log_agent_output(request_id, {
-                    "problem_id": problem.id,
-                    "task": task_name,
-                    "stage": item["stage"],
+                    "stage": 0,
                     "role": "extractor",
                     "is_extractor": True,
-                    "system_prompt": item.get("system_prompt", ""),
-                    "user_input": item.get("user_input", ""),
-                    "status": res.status,
-                    "error": None,
-                    "content": raw_output,
-                    "tokens": res.total_tokens,
-                    "elapsed": res.execution_time,
+                    "system_prompt": extractor_prompt,
+                    "user_input": original_problems[i],
+                    "status": result.status,
+                    "error": result.error,
+                    "content": result.content,
+                    "tokens": result.total_tokens,
+                    "elapsed": result.execution_time,
                     "request_timestamp": request_ts,
                 })
-                current_input = raw_output  # Final answer
-                continue
-
-            # Regular agent - parse structured output
-            parsed = parse_structured_output(raw_output)
+                
+                if result.status != "COMPLETED":
+                    outputs.append(("", 0, 0, time.time() - start_time, result.error or f"Failed: {result.status}"))
+                else:
+                    outputs.append((result.content, result.total_tokens, result.completion_tokens, time.time() - start_time, None))
             
-            # Log the FULL output (including [WORK])
+            return outputs
+        else:
+            return [(original_problems[i], 0, 0, time.time() - start_time, None) for i in range(n_problems)]
+    
+    # Run each agent step as a BATCH
+    for stage, role in enumerate(roles):
+        is_first = (stage == 0)
+        prompt = get_agent_prompt(role, task_name, is_first_agent=is_first) + think_suffix
+        
+        # Build batch of messages for this agent step
+        messages_list = [
+            [
+                {"role": "system", "content": prompt},
+                {"role": "user", "content": current_inputs[i]},
+            ]
+            for i in range(n_problems)
+            if errors[i] is None  # Skip problems that already failed
+        ]
+        
+        # Map indices: track which problems are in this batch
+        active_indices = [i for i in range(n_problems) if errors[i] is None]
+        
+        if not messages_list:
+            break  # All problems have errors
+        
+        # Single batch request for all active problems
+        results = await client.batch_complete(messages_list)
+        
+        # Process results and update state
+        for batch_idx, result in enumerate(results):
+            i = active_indices[batch_idx]  # Original problem index
+            problem = problems[i]
+            
+            if result.status != "COMPLETED":
+                errors[i] = result.error or f"Job failed with status {result.status}"
+                await log_agent_output(request_id, {
+                    "problem_id": problem.id,
+                    "task": task_name,
+                    "stage": stage,
+                    "role": role,
+                    "is_extractor": False,
+                    "system_prompt": prompt,
+                    "user_input": current_inputs[i],
+                    "status": result.status,
+                    "error": result.error,
+                    "content": "",
+                    "tokens": 0,
+                    "elapsed": result.execution_time,
+                    "request_timestamp": request_ts,
+                })
+                continue
+            
+            total_tokens[i] += result.total_tokens
+            completion_tokens[i] += result.completion_tokens
+            raw_output = result.content
+            
+            # Parse structured output
+            parsed = parse_structured_output(raw_output)
+            parsed_outputs[i] = parsed
+            
+            # Log the output
             await log_agent_output(request_id, {
                 "problem_id": problem.id,
                 "task": task_name,
-                "stage": item["stage"],
-                "role": item.get("role"),
+                "stage": stage,
+                "role": role,
                 "is_extractor": False,
-                "system_prompt": item.get("system_prompt", ""),
-                "user_input": item.get("user_input", ""),
-                "status": res.status,
+                "system_prompt": prompt,
+                "user_input": current_inputs[i],
+                "status": result.status,
                 "error": None,
-                "content": raw_output,  # Full output including [WORK]
+                "content": raw_output,
                 "parsed_problem": parsed.get("problem", ""),
                 "parsed_work": parsed.get("work", ""),
                 "parsed_comment": parsed.get("comment", ""),
                 "parsed_answer": parsed.get("answer", ""),
-                "tokens": res.total_tokens,
-                "elapsed": res.execution_time,
+                "tokens": result.total_tokens,
+                "elapsed": result.execution_time,
                 "request_timestamp": request_ts,
             })
             
-            # Build pass-through input: only [PROBLEM], [INSIGHTS], [ANSWER] - NOT [WORK]
-            passthrough_input = build_passthrough_input(orig_problem, parsed)
-            current_input = passthrough_input
+            # Build pass-through input for next agent
+            next_stage = stage + 1
+            next_role = roles[next_stage] if next_stage < len(roles) else ""
+            next_role_desc = ROLE_DESCRIPTIONS.get(next_role.lower(), "") if next_role else ""
+            current_inputs[i] = build_passthrough_input(
+                original_problems[i], parsed, 
+                prev_role=role,
+                current_role=next_role,
+                current_role_desc=next_role_desc,
+            )
+    
+    # Run extractor if enabled (as a batch)
+    # Extractor never uses thinking - it's just simple extraction
+    if use_extractor:
+        extractor_prompt = get_extractor_prompt(task_name) + " /no_think"
+        
+        # Build batch of messages for extraction (only for non-errored problems)
+        active_indices = [i for i in range(n_problems) if errors[i] is None]
+        
+        if active_indices:
+            messages_list = []
+            for i in active_indices:
+                extractor_input = ""
+                if parsed_outputs[i]:
+                    extractor_input = parsed_outputs[i].get("answer", "") or ""
+                messages_list.append([
+                    {"role": "system", "content": extractor_prompt},
+                    {"role": "user", "content": extractor_input},
+                ])
             
-            next_stage = item["stage"] + 1
-            if next_stage < len(roles):
-                # Subsequent agents don't get task description (is_first_agent=False)
-                prompt = get_agent_prompt(roles[next_stage], task_name, is_first_agent=False) + think_suffix
-                job_id = await client.submit_job(
-                    messages=[
-                        {"role": "system", "content": prompt},
-                        {"role": "user", "content": passthrough_input},  # Only PROBLEM, INSIGHTS, ANSWER
-                    ]
-                )
-                next_pending.append({
-                    "job_id": job_id, "stage": next_stage, "is_extractor": False, "role": roles[next_stage],
-                    "system_prompt": prompt, "user_input": passthrough_input, "original_problem": orig_problem
+            results = await client.batch_complete(messages_list)
+            
+            for batch_idx, result in enumerate(results):
+                i = active_indices[batch_idx]
+                problem = problems[i]
+                extractor_input = ""
+                if parsed_outputs[i]:
+                    extractor_input = parsed_outputs[i].get("answer", "") or ""
+                
+                await log_agent_output(request_id, {
+                    "problem_id": problem.id,
+                    "task": task_name,
+                    "stage": len(roles),
+                    "role": "extractor",
+                    "is_extractor": True,
+                    "system_prompt": extractor_prompt,
+                    "user_input": extractor_input,
+                    "status": result.status,
+                    "error": result.error,
+                    "content": result.content,
+                    "tokens": result.total_tokens,
+                    "elapsed": result.execution_time,
+                    "request_timestamp": request_ts,
                 })
-            else:
-                # finished agents, maybe extractor
-                if use_extractor:
-                    # Extractor gets the [ANSWER] section from last agent
-                    extractor_input = parsed.get("answer", raw_output)
-                    extractor_prompt = get_extractor_prompt(task_name) + think_suffix
-                    job_id = await client.submit_job(
-                        messages=[
-                            {"role": "system", "content": extractor_prompt},
-                            {"role": "user", "content": extractor_input},
-                        ]
-                    )
-                    next_pending.append({
-                        "job_id": job_id, "stage": next_stage, "is_extractor": True,
-                        "system_prompt": extractor_prompt, "user_input": extractor_input, "original_problem": orig_problem
-                    })
-                # else done
-
-        pending = next_pending
-        if pending:
-            await asyncio.sleep(poll_interval)
-
-    return current_input, total_tokens, time.time() - start_time, error
+                
+                if result.status != "COMPLETED":
+                    errors[i] = result.error or f"Extractor failed: {result.status}"
+                else:
+                    total_tokens[i] += result.total_tokens
+                    completion_tokens[i] += result.completion_tokens
+                    current_inputs[i] = result.content
+    
+    # Build final results
+    exec_time = time.time() - start_time
+    return [
+        (current_inputs[i], total_tokens[i], completion_tokens[i], exec_time, errors[i])
+        for i in range(n_problems)
+    ]
 
 
-async def evaluate_workflow_parallel(
+async def evaluate_workflow_batched(
     workflow: WorkflowConfig,
     problems: List[Problem],
     dataset,
@@ -838,81 +868,67 @@ async def evaluate_workflow_parallel(
     request_ts: str,
 ) -> EvaluateResponse:
     """
-    Evaluate a BlockWorkflow on multiple problems in parallel.
+    Evaluate a BlockWorkflow using batched requests.
     
-    Uses fire-all-at-once pattern for maximum throughput.
+    Each agent step processes ALL problems in a single batch request.
     """
     start_time = time.time()
-    client = state.runpod_client
+    client = state.vllm_client
     
-    # Run all problems in parallel using fire-and-poll
-    tasks = []
-    for problem in problems:
-        tasks.append(
-            run_workflow_on_problem(
-                problem,
-                workflow.blocks,
-                workflow.task_name,
-                workflow.use_extractor,
-                client,
-                request_id=request_id,
-                request_ts=request_ts,
-                think=workflow.think,
-            )
-        )
-
-    results = await asyncio.gather(*tasks, return_exceptions=True)
-
+    # Run workflow on all problems (batched)
+    results = await run_workflow_batched(
+        problems,
+        workflow.blocks,
+        workflow.task_name,
+        workflow.use_extractor,
+        client,
+        request_id=request_id,
+        request_ts=request_ts,
+        think=workflow.think,
+    )
+    
     # Process results
     problem_results = []
     num_correct = 0
     total_tokens = 0
+    total_completion_tokens = 0
     
     for problem, result in zip(problems, results):
-        if isinstance(result, Exception):
+        output, tokens, comp_tokens, exec_time, err = result
+        total_tokens += tokens
+        total_completion_tokens += comp_tokens
+        
+        if err:
             problem_results.append(ProblemResult(
                 problem_id=problem.id,
                 correct=False,
-                tokens=0,
-                time=0,
-                error=str(result)[:200]
+                tokens=tokens,
+                time=exec_time,
+                error=str(err)[:200]
             ))
-            # Finalize log with error
             await finalize_problem_log(request_id, problem.id, str(problem.ground_truth), False)
         else:
-            output, tokens, exec_time, err = result
-            total_tokens += tokens
-            if err:
-                problem_results.append(ProblemResult(
-                    problem_id=problem.id,
-                    correct=False,
-                    tokens=tokens,
-                    time=exec_time,
-                    error=str(err)[:200]
-                ))
-                # Finalize log with error
-                await finalize_problem_log(request_id, problem.id, str(problem.ground_truth), False)
-            else:
-                try:
-                    is_correct = dataset.evaluate(output, problem)
-                except Exception as e:
-                    is_correct = False
-                    err = str(e)
-                if is_correct:
-                    num_correct += 1
-                problem_results.append(ProblemResult(
-                    problem_id=problem.id,
-                    correct=is_correct,
-                    tokens=tokens,
-                    time=exec_time,
-                    error=str(err)[:200] if err else None
-                ))
-                # Finalize log with expected answer and correctness
-                # Priority: output (CRUX-O), answer (MATH), code (MBPP)
-                expected = problem.ground_truth.get("output") or problem.ground_truth.get("answer") or problem.ground_truth.get("code") or str(problem.ground_truth)
-                await finalize_problem_log(request_id, problem.id, expected, is_correct)
+            try:
+                is_correct = dataset.evaluate(output, problem)
+            except Exception as e:
+                is_correct = False
+                err = str(e)
+            
+            if is_correct:
+                num_correct += 1
+            
+            problem_results.append(ProblemResult(
+                problem_id=problem.id,
+                correct=is_correct,
+                tokens=tokens,
+                time=exec_time,
+                error=str(err)[:200] if err else None
+            ))
+            
+            expected = problem.ground_truth.get("output") or problem.ground_truth.get("answer") or problem.ground_truth.get("code") or str(problem.ground_truth)
+            await finalize_problem_log(request_id, problem.id, expected, is_correct)
     
-    # Save all logs for this request
+    # Save logs
     await save_request_logs(request_id, request_ts)
     
     total_time = time.time() - start_time
@@ -922,8 +938,9 @@ async def evaluate_workflow_parallel(
         num_correct=num_correct,
         num_problems=len(problems),
         total_tokens=total_tokens,
+        completion_tokens=total_completion_tokens,
         total_time=total_time,
-        tokens_per_second=total_tokens / total_time if total_time > 0 else 0,
+        tokens_per_second=total_completion_tokens / total_time if total_time > 0 else 0,  # Based on generated tokens
         problems=problem_results
     )
 
@@ -936,23 +953,16 @@ async def health_check():
     return {
         "status": "healthy",
         "datasets": list(state.datasets.keys()),
-        "runpod_connected": state.runpod_client is not None
+        "vllm_connected": state.vllm_client is not None
     }
 
 
 @app.get("/stats")
-async def get_runpod_stats():
-    """Get RunPod client statistics for monitoring throughput."""
-    if state.runpod_client:
-        stats = state.runpod_client.get_stats()
-        return {
-            "active_jobs": stats["active_jobs"],
-            "total_submitted": stats["total_submitted"],
-            "total_completed": stats["total_completed"],
-            "total_failed": stats["total_failed"],
-            "peak_active": stats["peak_active"],
-        }
-    return {"error": "RunPod client not initialized"}
+async def get_vllm_stats():
+    """Get vLLM client statistics for monitoring throughput."""
+    if state.vllm_client:
+        return state.vllm_client.get_stats()
+    return {"error": "vLLM client not initialized"}
 
 
 @app.get("/datasets")
@@ -969,7 +979,7 @@ async def evaluate_workflow(request: EvaluateRequest):
     """
     Evaluate a single BlockWorkflow on a dataset.
     
-    Fire-all-at-once: All problems are evaluated in parallel.
+    Uses batched requests: all problems processed together per agent step.
     """
     task_name = request.workflow.task_name.upper()
     
@@ -980,27 +990,20 @@ async def evaluate_workflow(request: EvaluateRequest):
     problems = dataset.sample(request.num_problems, seed=request.seed)
     request_id = str(uuid.uuid4())
     request_ts = time.strftime("%Y%m%dT%H%M%S", time.gmtime())
-    return await evaluate_workflow_parallel(request.workflow, problems, dataset, request_id=request_id, request_ts=request_ts)
+    
+    return await evaluate_workflow_batched(workflow=request.workflow, problems=problems, dataset=dataset, request_id=request_id, request_ts=request_ts)
 
 
 @app.post("/evaluate/simple", response_model=EvaluateResponse)
 async def evaluate_simple(request: SimpleEvaluateRequest):
     """
     Evaluate a workflow with simple role list (converts to AgentBlocks).
-    
-    Example body:
-    {
-        "roles": ["Task Parsing Agent", "Code Generation Agent"],
-        "task_name": "MBPP",
-        "num_problems": 10
-    }
     """
     task_name = request.task_name.upper()
     
     if task_name not in state.datasets:
         raise HTTPException(404, f"Dataset {task_name} not loaded")
     
-    # Convert roles to blocks
     blocks = [BlockConfig(type="agent", role=role) for role in request.roles]
     
     workflow = WorkflowConfig(
@@ -1014,7 +1017,8 @@ async def evaluate_simple(request: SimpleEvaluateRequest):
     problems = dataset.sample(request.num_problems, seed=request.seed)
     request_id = str(uuid.uuid4())
     request_ts = time.strftime("%Y%m%dT%H%M%S", time.gmtime())
-    return await evaluate_workflow_parallel(workflow, problems, dataset, request_id=request_id, request_ts=request_ts)
+    
+    return await evaluate_workflow_batched(workflow=workflow, problems=problems, dataset=dataset, request_id=request_id, request_ts=request_ts)
 
 
 @app.post("/evaluate/batch")
@@ -1022,7 +1026,7 @@ async def evaluate_batch(request: BatchEvaluateRequest):
     """
     Evaluate multiple BlockWorkflows on the same problems.
     
-    Useful for comparing different workflow configurations.
+    Each workflow is evaluated concurrently (one batch request per agent step per workflow).
     """
     if not request.workflows:
         raise HTTPException(400, "No workflows provided")
@@ -1037,9 +1041,15 @@ async def evaluate_batch(request: BatchEvaluateRequest):
     batch_id = str(uuid.uuid4())
     request_ts = time.strftime("%Y%m%dT%H%M%S", time.gmtime())
     
-    # Evaluate all workflows in parallel
+    # Evaluate all workflows concurrently
     tasks = [
-        evaluate_workflow_parallel(wf, problems, dataset, request_id=f"{batch_id}-{idx}", request_ts=request_ts)
+        evaluate_workflow_batched(
+            workflow=wf,
+            problems=problems,
+            dataset=dataset,
+            request_id=f"{batch_id}-{idx}",
+            request_ts=request_ts
+        )
         for idx, wf in enumerate(request.workflows)
     ]
     
@@ -1073,7 +1083,6 @@ async def quick_evaluate(
     
     Example: /evaluate/quick?roles=Code Generation Agent&task=MBPP&num_problems=5
     """
-    # Convert comma-separated roles to blocks
     role_list = [r.strip() for r in roles.split(",")]
     blocks = [BlockConfig(type="agent", role=role) for role in role_list]
     
@@ -1096,8 +1105,6 @@ async def quick_evaluate(
 def create_block_workflow_from_config(config: WorkflowConfig):
     """
     Recreate a BlockWorkflow object from a WorkflowConfig.
-    
-    This is useful for running workflows locally after receiving config from server.
     """
     from src.agents.block import AgentBlock, CompositeBlock
     from src.agents.workflow_block import BlockWorkflow
