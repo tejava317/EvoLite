@@ -1,0 +1,139 @@
+Using RunPod API (endpoint: r60j6no0elbjw7)
+
+============================================================
+Starting Genetic Algorithm
+Task: MBPP
+Workflow type: block
+Population size: 50
+Generations: 10
+Evaluation: Batch
+Using extractor: True
+============================================================
+
+Initializing population...
+Generation   0 | Best: 0.3000 | Avg: 0.2820
+Generation   1 | Best: 0.4000 | Avg: 0.2800
+[Saved] Pareto front saved to: graph/generation_async_2.png
+Generation   2 | Best: 0.6000 | Avg: 0.3900
+Generation   3 | Best: 0.6000 | Avg: 0.4100
+[Saved] Pareto front saved to: graph/generation_async_4.png
+Generation   4 | Best: 0.8000 | Avg: 0.5580
+
+Workflow roles: ['Compliance Officer'], pass@k: 0.3, total_tokens: 9095
+
+Workflow roles: ['Math Answer Extractor'], pass@k: 0.7, total_tokens: 9466
+
+Workflow roles: ['Customer Support'], pass@k: 0.8, total_tokens: 9948
+
+Workflow roles: ['Code Generation Agent'], pass@k: 0.3, total_tokens: 9684
+
+Workflow roles: ['Software Architect'], pass@k: 0.7, total_tokens: 9864
+
+Workflow roles: ['Documentation Manager'], pass@k: 0.8, total_tokens: 10008
+
+Workflow roles: ['Release Planner'], pass@k: 0.3, total_tokens: 9765
+
+Workflow roles: ['Math Answer Extractor'], pass@k: 0.4, total_tokens: 9891
+
+Workflow roles: ['Software Architect'], pass@k: 0.7, total_tokens: 9967
+
+Workflow roles: ['Software Architect'], pass@k: 0.6, total_tokens: 9900
+
+Workflow roles: ['Security Officer'], pass@k: 0.8, total_tokens: 10110
+
+Workflow roles: ['Infrastructure Architect'], pass@k: 0.2, total_tokens: 9777
+
+Workflow roles: ['Data Privacy Officer'], pass@k: 0.3, total_tokens: 9821
+
+Workflow roles: ['Security Officer'], pass@k: 0.7, total_tokens: 10044
+
+Workflow roles: ['Infrastructure Architect'], pass@k: 0.6, total_tokens: 9988
+
+Workflow roles: ['Security Officer'], pass@k: 0.8, total_tokens: 10163
+
+Workflow roles: ['Code Generation Agent'], pass@k: 0.2, total_tokens: 9815
+
+Workflow roles: ['Code Generation Agent'], pass@k: 0.3, total_tokens: 9860
+
+Workflow roles: ['Security Officer'], pass@k: 0.7, total_tokens: 10053
+
+Workflow roles: ['Software Architect'], pass@k: 0.4, total_tokens: 9989
+
+Workflow roles: ['Code Answer Extractor', 'Security Officer'], pass@k: 0.8, total_tokens: 17607
+
+Workflow roles: ['Software Architect'], pass@k: 0.3, total_tokens: 9921
+
+Workflow roles: ['DevOps Security Engineer'], pass@k: 0.2, total_tokens: 9889
+
+Workflow roles: ['DevOps Lead'], pass@k: 0.7, total_tokens: 10055
+
+Workflow roles: ['Project Manager', 'Infrastructure Architect'], pass@k: 0.8, total_tokens: 17659
+Generation   5 | Best: 0.8000 | Avg: 0.5800
+[Saved] Pareto front saved to: graph/generation_async_6.png
+Generation   6 | Best: 0.8000 | Avg: 0.4120
+Generation   7 | Best: 0.8000 | Avg: 0.4000
+[Saved] Pareto front saved to: graph/generation_async_8.png
+Generation   8 | Best: 0.8000 | Avg: 0.5040
+Generation   9 | Best: 0.8000 | Avg: 0.5880
+[Saved] Pareto front saved to: graph/generation_async_10.png
+
+Workflow roles: ['Compliance Officer'], pass@k: 0.3, total_tokens: 9095
+
+Workflow roles: ['Math Answer Extractor'], pass@k: 0.7, total_tokens: 9466
+
+Workflow roles: ['Math Answer Extractor'], pass@k: 0.8, total_tokens: 9615
+
+Workflow roles: ['Infrastructure Architect'], pass@k: 0.1, total_tokens: 9621
+
+Workflow roles: ['Documentation Manager'], pass@k: 0.7, total_tokens: 9631
+
+Workflow roles: ['Security Officer'], pass@k: 0.8, total_tokens: 9694
+
+Workflow roles: ['Software Architect'], pass@k: 0.6, total_tokens: 9644
+
+Workflow roles: ['Customer Support'], pass@k: 0.8, total_tokens: 9948
+
+Workflow roles: ['Customer Support'], pass@k: 0.7, total_tokens: 9696
+
+Workflow roles: ['Software Architect'], pass@k: 0.5, total_tokens: 9647
+
+Workflow roles: ['Software Architect'], pass@k: 0.6, total_tokens: 9652
+
+Workflow roles: ['Documentation Manager'], pass@k: 0.8, total_tokens: 10008
+
+Workflow roles: ['Infrastructure Architect'], pass@k: 0.7, total_tokens: 9772
+
+Workflow roles: ['Software Architect'], pass@k: 0.5, total_tokens: 9661
+
+Workflow roles: ['Code Generation Agent'], pass@k: 0.6, total_tokens: 9691
+
+Workflow roles: ['Security Officer'], pass@k: 0.8, total_tokens: 10110
+
+Workflow roles: ['Infrastructure Architect'], pass@k: 0.7, total_tokens: 9774
+
+Workflow roles: ['Code Generation Agent'], pass@k: 0.3, total_tokens: 9684
+
+Workflow roles: ['Code Generation Agent'], pass@k: 0.6, total_tokens: 9694
+
+Workflow roles: ['Security Officer'], pass@k: 0.8, total_tokens: 10163
+
+Workflow roles: ['Software Architect'], pass@k: 0.7, total_tokens: 9864
+
+Workflow roles: ['Code Generation Agent'], pass@k: 0.3, total_tokens: 9719
+
+Workflow roles: ['Software Architect'], pass@k: 0.6, total_tokens: 9729
+
+Workflow roles: ['Code Generation Agent'], pass@k: 0.8, total_tokens: 10190
+
+Workflow roles: ['Infrastructure Architect'], pass@k: 0.7, total_tokens: 9897
+
+============================================================
+FINAL BEST WORKFLOW
+============================================================
+
+Fitness: 0.80000
+============================================================
+
+
+Best workflow roles: ['Compliance Officer']
+Fitness: 0.3000
