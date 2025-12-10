@@ -1,5 +1,5 @@
 import asyncio
-from src.evaluation_client import EvaluationClient, BlockConfig
+from src.client import EvaluationClient, BlockConfig
 from src.utils.generate_prompts import AGENT_ROLES
 
 # Helper to create workflow from role names
@@ -10,7 +10,7 @@ def wf(*roles):
 ALL_SINGLE_AGENTS = [wf(role_name) for role_name, _ in AGENT_ROLES]
 
 async def main():
-    client = EvaluationClient("http://localhost:8000")
+    client = EvaluationClient("http://localhost:8001")
     
     # Sample workflows to test different strategies
     workflows = [
@@ -41,10 +41,10 @@ async def main():
         wf("Solution Drafter", "Solution Reviewer", "Solution Refiner", "Quality Gatekeeper"),  # 14
         wf("Solution Drafter", "Bug Hunter", "Correctness Verifier", "Final Presenter"),  # 15
     ]
-    # Test all 50 single-agent workflows
+    # # Test all 50 single-agent workflows
     workflows = ALL_SINGLE_AGENTS
     # workflows = [
-    #     wf("Solution Drafter"),
+    #     wf("Final Presenter"),
     # ]
 
     
@@ -54,11 +54,11 @@ async def main():
     
     results = await client.evaluate_batch_async(
         workflows=workflows,
-        task_name="MATH",
-        num_problems=30,  # Start with 50 for faster testing
+        task_name="MBPP",
+        num_problems=100,  # Start with 50 for faster testing
         use_extractor=False,
         seed=43211,
-        think=False,
+        think=True,
     )
     
     # Print results sorted by pass@1
