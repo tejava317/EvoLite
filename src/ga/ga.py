@@ -120,59 +120,58 @@ To avoid the timeout, we use the static batch size.
         List[EvaluationClient]: The list of result.
 
 """
+
 def evaluate_fitness_batch(workflows, server_url: str = None, batch_size: int = 15):
 
-    # Asynchronously run.
     async def _run():
-        from src.evaluation_client import EvaluationClient, BlockConfig, evaluate_block_workflow
+        from src.evaluation_client import EvaluationClient, BlockConfig
         
         url = server_url or EVAL_SERVER_URL
 
-        # Check all tasks are same or not.
-        all_tasks_equal = len({wf.task_name for wf in workflows}) == 1
-        if not all_tasks_equal:
-            raise ValueError("The task inside a batch is different")
+        task_name = workflows[0].task_name
+        if len({wf.task_name for wf in workflows}) != 1:
+            raise ValueError("All workflows must have the same task_name.")
 
+        client = EvaluationClient(url)
         all_results = []
 
-        # sector the workflow witht the batch size.
+        # Use a batch
         for start in range(0, len(workflows), batch_size):
             batch = workflows[start:start + batch_size]
 
-            # BlockWorkflow
-            if all(isinstance(wf, BlockWorkflow) for wf in batch):
+            # Convert batch → BlockConfig list
+            batch_blocks = []
+            for wf in batch:
+                blocks = []
+                for block in wf.blocks:
+                    if isinstance(block, AgentBlock):
+                        blocks.append(BlockConfig(type="agent", role=block.role))
+                    elif isinstance(block, CompositeBlock):
+                        blocks.append(BlockConfig(
+                            type="composite",
+                            divider_role=block.divider_role,
+                            synth_role=block.synth_role
+                        ))
+                batch_blocks.append(blocks)
 
-                blocks_list = []
-                
-                for workflow in batch:
-                    blocks = []
-                    for block in workflow.blocks:
-                        if isinstance(block, AgentBlock):
-                            blocks.append(BlockConfig(type="agent", role=block.role))
-                        elif isinstance(block, CompositeBlock):
-                            blocks.append(BlockConfig(
-                                type="composite",
-                                divider_role=block.divider_role,
-                                synth_role=block.synth_role
-                            ))
-                    blocks_list.append(blocks)
+            # === async evaluate ===
+            respond = await client.evaluate_batch_async(
+                workflows=batch_blocks,
+                task_name=task_name,
+                num_problems=NUM_EVAL_PROBLEMS,
+                use_extractor=False,
+                seed=43211,
+                think=False,
+            )
 
-                client = EvaluationClient(url)
-                result = client.evaluate_batch(
-                    blocks_list,
-                    batch[0].task_name,
-                    NUM_EVAL_PROBLEMS
-                )
+            # respond is already a list of EvalResult
+            all_results.extend(respond)
 
-                if isinstance(result, list):
-                    all_results.extend(result)
-                else:
-                    raise ValueError("evaluate_batch should return a list.")
-
-            else:
-                raise ValueError("Wrong type of agent.")
+        await client.close()
         return all_results
+
     return asyncio.run(_run())
+
 
 
 # From the agent list, select one random agent role.
@@ -295,8 +294,9 @@ def mutate(entry) -> BlockWorkflow:
     # Use exponential decay.
     max_len = args.max_workflow
     x = w_len / max_len
-    k = 0.4
-    prob = math.exp(-k * x)
+    prob = 1 - x
+    # k = 0.4
+    # prob = math.exp(-k * x)
     
     if random.random() < prob:
         return addition(entry)
@@ -346,6 +346,7 @@ def run_ga(
         print(f"Generations: {args.generation}")
         print(f"Evaluation: Batch with size 15.")
         print(f"Using extractor: {use_extractor}")
+        print(f"Fast: {args.fast}")
         print(f"{'='*60}\n")
     
     # Choose evaluation function
@@ -390,10 +391,9 @@ def run_ga(
             child_workflow = crossover(parent1, parent2)
             child["workflow"] = child_workflow
             
-            # Mutation
-            if random.random() <= args.mutation_rate:
-                child_workflow = mutate(child)
-                child["workflow"] = child_workflow
+            # Mutation, Essential Progress.
+            child_workflow = mutate(child)
+            child["workflow"] = child_workflow
             
             child_workflows.append(child_workflow)
             child_population.append(child)

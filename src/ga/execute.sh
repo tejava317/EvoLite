@@ -1,4 +1,4 @@
-category="small-adaptive"
+category="small-adaptive-v1"
 
 nohup python -m src.ga.ga \
     --population-size 30 \
