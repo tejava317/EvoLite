@@ -52,7 +52,7 @@ class VLLMClient:
         timeout: float = 600.0,  # 10 minutes for large batches
     ):
         self.base_url = (base_url or os.getenv("VLLM_BASE_URL", "http://38.128.232.68:27717/v1")).rstrip("/")
-        self.model = model or os.getenv("VLLM_MODEL", "Qwen/Qwen3-0.6B")
+        self.model = model or os.getenv("VLLM_MODEL", "Qwen/Qwen3-4B")
         self.default_temperature = default_temperature
         self.default_max_tokens = default_max_tokens
         self.timeout = timeout
