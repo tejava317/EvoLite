@@ -3,6 +3,10 @@ import random
 import yaml
 import numpy as np
 import time
+import asyncio
+import functools
+import math
+
 from copy import deepcopy
 from pathlib import Path
 from typing import Optional, Union
@@ -16,16 +20,15 @@ from src.datasets import MBPPDataset, MathAlgebraDataset, BaseDataset
 from src.evaluation.pass_at_k import quick_evaluate
 from src.ga.multi_objective import *
 from src.ga.checkpoint import *
-from src.ga.seed import *
 
-import asyncio
-import functools
+
+# Set flushing as True.
 print = functools.partial(print, flush=True)
 
 # =============== CONFIGURATION ===============
 
 # Evaluation configuration
-NUM_EVAL_PROBLEMS = 5  # Number of problems to evaluate per fitness calculation
+NUM_EVAL_PROBLEMS = 30  # Number of problems to evaluate per fitness calculation
 EVAL_SEED = None  # Set to an integer for reproducible sampling
 TOKEN_PENALTY = 0.0001  # Penalty coefficient for token usage
 
@@ -76,10 +79,14 @@ def get_dataset(task_name: str) -> BaseDataset:
     return _dataset_cache
 
 # Fast fitness evaluation with the random number.
-def evaluate_fitness_fast(workflow: Union[Workflow, BlockWorkflow]) -> float:
-    pass_at_k = random.random()
-    token_term = random.random()
-    return {"pass_at_k": pass_at_k, "token" : token_term}
+def evaluate_fitness_fast(workflows, server_url: str) -> float:
+    
+    results = []
+    for wf in workflows:
+        pass_at_k = random.random()
+        token_term = random.random()
+        results.append({"pass_at_k": pass_at_k, "token" : token_term})
+    return results
 
 # Evaluate fitness using the evaluation server.
 # Works with BlockWorkflow.
@@ -184,12 +191,17 @@ Initialize the population of workflows.
         List of {"workflow": Workflow|BlockWorkflow, "fitness": float} dictionaries
 """
 
-def initialize_population(task_name: str, server_url: str, use_extractor: bool = True, workflow_type: str = "block"):
+def initialize_population(task_name: str, server_url: str, use_extractor: bool = True):
 
     population = []
     workflows = []
     start_time = time.time()
     
+    if args.fast:
+        eval_fn = evaluate_fitness_fast
+    else:
+        eval_fn = evaluate_fitness_batch
+
     for _ in range(args.population_size):
         
         length = random.randint(1, args.max_workflow)
@@ -205,9 +217,13 @@ def initialize_population(task_name: str, server_url: str, use_extractor: bool =
         workflows.append(workflow)
         population.append({"workflow": workflow, "fitness": -float("inf")})
     
-    result = evaluate_fitness_batch(workflows, server_url)
+    result = eval_fn(workflows, server_url)
+    
     for i in range(len(workflows)):
-        population[i]["fitness"] = {"pass_at_k": result[i].pass_at_1, "token" : result[i].total_tokens}
+        if args.fast:
+            population[i]["fitness"] = result[i]
+        else:    
+            population[i]["fitness"] = {"pass_at_k": result[i].pass_at_1, "token" : result[i].total_tokens}
     
     # Record the time.
     end_time = time.time()
@@ -218,14 +234,16 @@ def initialize_population(task_name: str, server_url: str, use_extractor: bool =
 
 
 # Addition operator for BlockWorkflow
-def addition(workflow: BlockWorkflow) -> BlockWorkflow:
+def addition(entry)->BlockWorkflow:
+
+    workflow = entry["workflow"]
     new_workflow = workflow.copy()
     
     if len(workflow.blocks) < args.max_workflow:
         new_agent_role = random_agent()
         idx = random.randint(0, len(new_workflow.blocks))
         
-        if random.random() < 0.8:
+        if random.random() < 1.0:
             new_workflow.insert_block(AgentBlock(new_agent_role), idx)
         else:
             new_workflow.insert_block(CompositeBlock(), idx)
@@ -234,7 +252,9 @@ def addition(workflow: BlockWorkflow) -> BlockWorkflow:
 
 
 # Deletion operator for BlockWorkflow
-def deletion(workflow: BlockWorkflow) -> BlockWorkflow:
+def deletion(entry)->BlockWorkflow:
+    
+    workflow = entry["workflow"]
     new_workflow = workflow.copy()
     
     if len(new_workflow.blocks) > 1:
@@ -245,53 +265,49 @@ def deletion(workflow: BlockWorkflow) -> BlockWorkflow:
 
 
 # Crossover operator for BlockWorkflow
-def crossover(parent1: BlockWorkflow, parent2: BlockWorkflow) -> BlockWorkflow:
-    w1 = parent1.copy().blocks
-    w2 = parent2.copy().blocks
+def crossover(parent1, parent2) -> BlockWorkflow:
     
-    if len(w1) == 0 or len(w2) == 0:
-        return parent1.copy()
+    w1 = parent1["workflow"].copy().blocks
+    w2 = parent2["workflow"].copy().blocks
     
-    cut1 = random.randint(0, len(w1) - 1)
-    cut2 = random.randint(0, len(w2) - 1)
+    if len(w1) <= 1 or len(w2) <= 1:
+        return parent1["workflow"].copy()
+    
+    cut1 = random.randint(1, len(w1) - 1)
+    cut2 = random.randint(1, len(w2) - 1)
     
     new_blocks = w1[:cut1] + w2[cut2:]
     new_blocks = new_blocks[:args.max_workflow]
     
-    child = BlockWorkflow(task_name=parent1.task_name, blocks=new_blocks)
+    child = BlockWorkflow(task_name=parent1["workflow"].task_name, blocks=new_blocks)
     return child
 
 
 # Mutation operator for BlockWorkflow
 # An addition or deletion is selectively chosen.
-def mutate(workflow: BlockWorkflow) -> BlockWorkflow:
-    if random.random() < 1.0:
-        return addition(workflow)
+def mutate(entry) -> BlockWorkflow:
+    
+    # Workflow length
+    w = entry["workflow"].blocks
+    w_len = len(w)
+
+    # Push if workflow length is nearer to MAX_WORKFLOW_LENGTH
+    # Use exponential decay.
+    max_len = args.max_workflow
+    x = w_len / max_len
+    k = 0.4
+    prob = math.exp(-k * x)
+    
+    if random.random() < prob:
+        return addition(entry)
     else:
-        return deletion(workflow)
+        return deletion(entry)
 
 
 # Selection
 def select(population, k=3):
     contenders = random.sample(population, min(len(population), k))
     return contenders[0]
-
-
-def workflow_to_str(workflow):
-
-    # Expand workflow into agents
-    workflow._expand_blocks_to_agents()
-    roles = [agent.role for agent in workflow.agents]
-
-    pass_at_k = getattr(workflow, "pass_at_k", None)
-    token = getattr(workflow, "token", None)
-
-    return {
-        "roles": " -> ".join(roles),
-        "pass_at_k": pass_at_k,
-        "token": token,
-    }
-
 
 
 """
@@ -313,13 +329,10 @@ Returns:
 # =============== GA LOOP ===============
 def run_ga(
     task_name: str,
-    use_real_evaluation: bool = False,
-    use_extractor: bool = True,
+    use_extractor: bool = False,
     verbose: bool = True,
-    use_server: bool = False,
     server_url: str = None,
-    use_batch: bool = False,
-    workflow_type: str = "block",
+    use_batch: bool = True,
     key: str = "ga"
 ):
 
@@ -329,7 +342,6 @@ def run_ga(
         print(f"\n{'='*60}")
         print(f"Starting Genetic Algorithm")
         print(f"Task: {task_name}")
-        print(f"Workflow type: {workflow_type}")
         print(f"Population size: {args.population_size}")
         print(f"Generations: {args.generation}")
         print(f"Evaluation: Batch with size 15.")
@@ -338,13 +350,16 @@ def run_ga(
     
     # Choose evaluation function
     # Let's use batch evalution in default.
-    eval_fn = evaluate_fitness_batch
+    if args.fast:
+        eval_fn = evaluate_fitness_fast
+    else:
+        eval_fn = evaluate_fitness_batch
     
     # Initialize population
     if verbose:
         print("Initializing population...")
 
-    population = initialize_population(task_name, server_url, use_extractor, workflow_type)
+    population = initialize_population(task_name, server_url, use_extractor)
     
     for generation in range(args.generation):
         
@@ -365,39 +380,37 @@ def run_ga(
         child_workflows = []
         child_population = []
         num_children = args.population_size - len(new_population)
+        
         while len(child_population) < num_children :
+            
             parent1 = select(population)
             parent2 = select(population)
             child = {"workflow": None, "fitness": -float("inf")}
             
-            child_workflow = crossover(parent1["workflow"], parent2["workflow"])
-            
-            if random.random() <= args.mutation_rate:
-                child_workflow = mutate(child_workflow)
-            
+            child_workflow = crossover(parent1, parent2)
             child["workflow"] = child_workflow
+            
+            # Mutation
+            if random.random() <= args.mutation_rate:
+                child_workflow = mutate(child)
+                child["workflow"] = child_workflow
+            
             child_workflows.append(child_workflow)
             child_population.append(child)
         
         # Perform fitness evaluation.
         result = eval_fn(child_workflows, server_url)
         for i in range(len(child_population)):
-            child_population[i]["fitness"] = {"pass_at_k": result[i].pass_at_1, "token" : result[i].total_tokens}
+            if args.fast:
+                child_population[i]["fitness"] = result[i]
+            else:   
+                child_population[i]["fitness"] = {"pass_at_k": result[i].pass_at_1, "token" : result[i].total_tokens}
 
         population = new_population + child_population
 
         # Record activity.
-        if (generation + 1) % 1 == 0:
+        if (generation + 1) % 5 == 0:
             
-            # Print the population
-            if not args.quiet:
-                for wf in population:
-                    wf_to_str = workflow_to_str(wf["workflow"])
-                    roles = wf_to_str["roles"]
-                    pass_at_k = wf_to_str["pass_at_k"]
-                    total_tokens = wf_to_str["token"]
-                    print(f"\nWorkflow roles: {roles}, pass@k: {pass_at_k}, total_tokens: {total_tokens}")
-
             # Save with .csv file and plot the pareto front.
             save_checkpoint_csv(population, f"{key}_{generation+1}")
             plot_pareto(population, f"{key}_{generation+1}")
@@ -447,14 +460,11 @@ if __name__ == "__main__":
     
     # Evaluation information
     parser.add_argument("--task", type=str, default=TASK_NAME, help="Task name (MBPP, MATH)")
-    parser.add_argument("--real", action="store_true", help="Use real LLM evaluation (local)")
-    parser.add_argument("--server", action="store_true", help="Use evaluation server")
     parser.add_argument("--server-url", type=str, default=EVAL_SERVER_URL, help="Evaluation server URL")
     parser.add_argument("--no-extractor", action="store_true", help="Disable answer extractor")
     parser.add_argument("--quiet", action="store_true", help="Suppress output")
-    parser.add_argument("--batch", type=bool, default=False, help="Perform batch fitness evaluation")
-    parser.add_argument("--type", type=str, default="block", choices=["workflow", "block"],
-                        help="Workflow type: 'workflow' or 'block'")
+    parser.add_argument("--batch", action="store_true", help="Perform batch fitness evaluation")
+    parser.add_argument("--fast", action="store_true", help="Random number fast evaluation")
 
     # GA information
     parser.add_argument("--population-size", type=int, default=100, help="The size of population")
@@ -469,28 +479,14 @@ if __name__ == "__main__":
     
     args = parser.parse_args()
     
-    # final_population = run_ga(
-    #     task_name=args.task,
-    #     use_real_evaluation=args.real,
-    #     use_extractor=not args.no_extractor,
-    #     verbose=not args.quiet,
-    #     use_server=args.server,
-    #     server_url=args.server_url,
-    #     use_batch=args.batch,
-    #     workflow_type=args.type,
-    #     key=args.key
-    # )
-    
-    # Brief test.
+
     final_population = run_ga(
-        task_name="MBPP",
-        use_real_evaluation=args.real,
+        task_name=args.task,
         use_extractor=not args.no_extractor,
-        verbose=True,
-        use_server=True,
+        verbose=not args.quiet,
         server_url=args.server_url,
-        use_batch=True,
-        workflow_type=args.type
+        use_batch=args.batch,
+        key=args.key
     )
 
 
@@ -503,3 +499,10 @@ if __name__ == "__main__":
     #         print(f"\nBest workflow roles: {[a.role for a in wk['workflow'].agents]}")
     #     pass_at_k_value = wk['fitness']["pass_at_k"]
     #     print(f"Fitness: {pass_at_k_value:.4f}")
+
+# 0. 현재는 addtion만 하고 있음. (workflow: LLM operator을 써도 됨. 우리가 GA로 정말 많은 것을 확인해볼 수 있다.)
+# 좋아. 우리의 결론은 아니었으면 좋겠다.
+# 1. addition, deletion을 개체 길이에 따라 비율 조절
+# 2. 처음에는 문제 적게 나중에 많이 (seeding)
+# 3. 쌓여있는 애들 재평가 (대신 적은 문제)
+# 4. 의미론적인 방법으로 operator를 만들기 (고민을 해보는 것은 의미가 있음)

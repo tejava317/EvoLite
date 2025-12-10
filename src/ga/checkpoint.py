@@ -13,13 +13,13 @@ def save_checkpoint_csv(population, name, save_dir="src/ga/checkpoints"):
         writer.writeheader()
 
         for entry in population:
+            
             wf = entry["workflow"]
             fitness = entry["fitness"]
 
-            workflow_roles = " -> ".join([agent.role for agent in wf.agents])
-
+            # Expand blocks to agents and change to the string.
             row = {
-                "workflow_roles": workflow_roles,
+                "workflow_roles": wf.workflow_to_string(),
                 "pass_at_k": fitness.get("pass_at_k", None),
                 "tokens": fitness.get("token", None),
             }

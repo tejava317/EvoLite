@@ -164,5 +164,3 @@ def get_task_prompts(task_name: str) -> dict:
         Dictionary of role -> prompt mappings
     """
     return INITIAL_PROMPTS.get(task_name, {})
-
-print(ROLE_DESCRIPTIONS)

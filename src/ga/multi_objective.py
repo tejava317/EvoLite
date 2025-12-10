@@ -110,7 +110,7 @@ def ngsa_select(population, num_select):
     return [population[i] for i in selected_indices]
 
 
-def plot_pareto(population, file_name="front", log_x = True, log_y = False):
+def plot_pareto(population, file_name="front", log_x = False, log_y = False):
 
     save_dir = "src/ga/graph"
     os.makedirs(save_dir, exist_ok=True)

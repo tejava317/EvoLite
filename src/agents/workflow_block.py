@@ -188,8 +188,18 @@ class BlockWorkflow:
         }
 
     def __str__(self):
-        agent_names = [f"{i+1}. {block}" for i, block in enumerate(self.blocks)]
-        return f"Workflow for {self.task_name}:\n" + "\n".join(agent_names)
+        
+        if not self.blocks:
+            return f""
+
+        block_chain = " -> ".join(str(block) for block in self.blocks)
+        return f"{block_chain}"
+
+    def workflow_to_string(self) -> str:
+
+        if not self.blocks:
+            return ""
+        return " -> ".join(str(block) for block in self.blocks)
 
     def copy(self):
         copied_blocks = [block.copy() for block in self.blocks]
@@ -200,14 +210,12 @@ if __name__ == "__main__":
     task_name = "HumanEval"
     input_data = "Write a Python function that calculates the factorial of a number."
 
-    # ===== 기존 Agent 기반 예시를 Block 기반으로 변환 =====
     role1 = "Task Parsing Agent"
     role2 = "Task Refinement Agent"
     role3 = "Code Generation Agent"
     role4 = "Code Reviewer Agent"
     role5 = "Code Refinement Agent"
 
-    # 각 역할을 단일 AgentBlock으로 감싸기
     blocks: List[Block] = [
         AgentBlock(role1),
         AgentBlock(role2),
@@ -227,11 +235,13 @@ if __name__ == "__main__":
         elif isinstance(b, CompositeBlock):
             print(f"  {i}. CompositeBlock(divider={b.divider_role}, synth={b.synth_role})")
 
-    workflow = Workflow(task_name=task_name, blocks=blocks)
+    workflow = BlockWorkflow(task_name=task_name, blocks=blocks)
+    workflow_str = workflow.workflow_to_string()
 
     print("\nInput data:")
     print(input_data)
     print("\nRunning workflow...")
+    print(workflow_str)
 
     # result = workflow.run(input_data)
     # print("\nResponse:")
