@@ -1,0 +1,101 @@
+workflow_roles,pass_at_k,tokens
+Solution Refiner,0.5333333333333333,30527
+Regression Sentinel,0.43333333333333335,30057
+Solution Refiner,0.4666666666666667,30423
+Solution Refiner,0.5,30450
+Explanation Author,0.36666666666666664,30300
+Solution Refiner,0.5333333333333333,30540
+Strategy Selector,0.4,30362
+Quality Auditor,0.3333333333333333,30357
+Solution Refiner -> Performance Optimizer,0.5333333333333333,56910
+Solution Refiner,0.5,30569
+Progress Summarizer,0.4,30480
+Interface Designer,0.4666666666666667,30568
+Solution Refiner,0.36666666666666664,30443
+Interface Designer -> Solution Refiner,0.5333333333333333,57150
+Strategy Selector,0.3333333333333333,30363
+Graph & Combinatorics Specialist -> Regression Sentinel,0.5,55500
+Dynamic Programming Specialist,0.4666666666666667,30765
+Performance Optimizer,0.4,30490
+Strategy Selector,0.43333333333333335,30573
+Logic Implementer -> Progress Summarizer,0.5333333333333333,58140
+Quality Auditor,0.3333333333333333,30401
+Progress Summarizer -> Regression Sentinel,0.5,56130
+Problem Analyzer,0.4666666666666667,31351
+Solution Refiner,0.4,30540
+Graph & Combinatorics Specialist,0.43333333333333335,30723
+Bug Hunter -> Approach Evaluator,0.5333333333333333,58400
+Progress Summarizer,0.36666666666666664,30627
+Solution Refiner,0.4666666666666667,32520
+Docstring Author -> Strings & Text Specialist,0.5,56520
+Quality Auditor,0.43333333333333335,30733
+Dynamic Programming Specialist -> Boundary Tester,0.5,56520
+Input/State Inspector -> Algorithm Strategist,0.5333333333333333,58513
+Progress Summarizer,0.36666666666666664,30665
+Progress Summarizer,0.43333333333333335,30761
+Regression Sentinel -> Progress Summarizer,0.4666666666666667,55410
+Performance Optimizer -> Solution Refiner,0.5,56580
+Logic Implementer -> Counterexample Generator -> Strings & Text Specialist -> Boundary Tester,0.5333333333333333,111422
+Progress Summarizer,0.3333333333333333,30749
+Progress Summarizer -> Logic Implementer,0.5,56640
+Regression Sentinel -> Strategy Selector,0.36666666666666664,55320
+Dynamic Programming Specialist -> Graph & Combinatorics Specialist,0.3333333333333333,57750
+Strings & Text Specialist -> Solution Refiner,0.43333333333333335,56610
+Strings & Text Specialist -> Graph & Combinatorics Specialist,0.36666666666666664,56730
+Regression Sentinel -> Performance Optimizer,0.43333333333333335,55680
+Graph & Combinatorics Specialist -> Strings & Text Specialist,0.4,56280
+Quality Auditor -> Input/State Inspector,0.26666666666666666,57240
+Strategy Selector -> Bug Hunter,0.3,56820
+Docstring Author -> Bug Hunter,0.36666666666666664,57750
+Quality Auditor -> Docstring Author,0.43333333333333335,57450
+Strings & Text Specialist -> Regression Sentinel,0.4,55380
+Performance Optimizer -> Dynamic Programming Specialist,0.5,57390
+Interface Designer -> Graph & Combinatorics Specialist,0.43333333333333335,56370
+Problem Analyzer -> Performance Optimizer,0.4,58200
+Performance Optimizer -> Strategy Selector,0.36666666666666664,56760
+Regression Sentinel -> Solution Refiner,0.4,56190
+Solution Planner -> Strategy Selector,0.3,57270
+Performance Optimizer -> Bug Hunter,0.36666666666666664,57060
+Bug Hunter -> Docstring Author,0.3,58320
+Regression Sentinel -> Strings & Text Specialist,0.5,56010
+Interface Designer -> Problem Analyzer,0.36666666666666664,56820
+Solution Planner -> Input/State Inspector,0.3333333333333333,57420
+Bug Hunter -> Quality Auditor,0.36666666666666664,57660
+Graph & Combinatorics Specialist -> Solution Drafter,0.43333333333333335,56400
+Quality Auditor -> Regression Sentinel,0.5,56730
+Interface Designer -> Docstring Author,0.4666666666666667,56820
+Performance Optimizer -> Quality Auditor,0.3333333333333333,56400
+Logic Implementer -> Quality Auditor,0.5333333333333333,57270
+Strings & Text Specialist -> Quality Auditor,0.4,55590
+Example Curator -> Performance Optimizer,0.4666666666666667,57810
+Logic Implementer -> Regression Sentinel,0.4666666666666667,57120
+Strategy Selector -> Counterexample Generator,0.3,56280
+Strategy Selector -> Dynamic Programming Specialist,0.3,56430
+Progress Summarizer -> Problem Analyzer,0.43333333333333335,57570
+Input/State Inspector -> Solution Refiner,0.4,57990
+Strategy Selector -> Logic Implementer,0.4666666666666667,56700
+Bug Hunter -> Problem Analyzer,0.36666666666666664,58110
+Problem Analyzer -> Input/State Inspector,0.26666666666666666,57450
+Performance Optimizer -> Example Curator,0.3333333333333333,56940
+Strategy Selector -> Regression Sentinel,0.43333333333333335,56250
+Solution Refiner -> Docstring Author,0.3,56700
+Docstring Author -> Comment & Hint Writer,0.3333333333333333,56490
+Logic Implementer -> Graph & Combinatorics Specialist,0.4666666666666667,57120
+Input/State Inspector -> Dynamic Programming Specialist,0.36666666666666664,61290
+Docstring Author -> Strategy Selector,0.43333333333333335,56220
+Regression Sentinel -> Quality Auditor,0.4,55410
+Progress Summarizer -> Graph & Combinatorics Specialist,0.36666666666666664,56520
+Problem Analyzer -> Quality Auditor,0.43333333333333335,57300
+Input/State Inspector -> Bug Hunter,0.4,58020
+Strategy Selector -> Performance Optimizer,0.4,56400
+Graph & Combinatorics Specialist -> Solution Refiner,0.4666666666666667,56100
+Performance Optimizer -> Graph & Combinatorics Specialist,0.4666666666666667,56310
+Logic Implementer -> Counterexample Generator -> Strings & Text Specialist -> Bug Hunter,0.4,112890
+Task Decomposer -> Problem Analyzer,0.36666666666666664,58860
+Interface Designer -> Strategy Selector,0.36666666666666664,56340
+Regression Sentinel -> Graph & Combinatorics Specialist,0.43333333333333335,56070
+Quality Auditor -> Problem Analyzer,0.5333333333333333,57270
+Logic Implementer -> Example Curator,0.5333333333333333,57240
+Solution Refiner -> Problem Analyzer,0.43333333333333335,56550
+Problem Analyzer -> Progress Summarizer,0.36666666666666664,58230
+Strategy Selector -> Docstring Author,0.4,56370

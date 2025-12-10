@@ -1,0 +1,101 @@
+workflow_roles,pass_at_k,tokens
+Progress Summarizer -> Dynamic Programming Specialist,0.5666666666666667,57970
+Problem Analyzer,0.3,30030
+Dynamic Programming Specialist,0.4666666666666667,30821
+Answer Extractor,0.4666666666666667,30479
+Input/State Inspector,0.43333333333333335,30544
+Regression Sentinel -> Docstring Author,0.5333333333333333,57452
+Logic Implementer,0.4,33238
+Task Decomposer,0.4,31472
+Test Designer -> Solution Planner -> Constraint Analyzer,0.5333333333333333,86463
+Solution Planner,0.4,31150
+Answer Extractor -> Strategy Selector,0.5,56550
+Test Designer -> Final Presenter,0.5,62160
+Logic Implementer -> Test Designer,0.5,58290
+Docstring Author -> Task Decomposer,0.5,57332
+Solution Planner,0.4,30807
+Regression Sentinel,0.36666666666666664,30002
+Data Structure Planner,0.36666666666666664,30844
+Task Decomposer -> Correctness Verifier -> Progress Summarizer,0.5,86448
+Counterexample Generator -> Dynamic Programming Specialist,0.4666666666666667,63720
+Solution Planner,0.36666666666666664,31270
+Input/State Inspector,0.3,30911
+Solution Refiner -> Regression Sentinel -> Solution Planner,0.4666666666666667,82920
+Assumption Checker,0.4666666666666667,30824
+Solution Planner,0.3333333333333333,31079
+Logic Implementer -> Summary Author,0.43333333333333335,57511
+Task Decomposer -> Explanation Author,0.3,59628
+Solution Planner -> Answer Extractor,0.4,58284
+Data Structure Planner,0.36666666666666664,31060
+Docstring Author,0.3,30903
+Stepwise Reasoner -> Summary Author -> Comment & Hint Writer,0.43333333333333335,87240
+Test Designer -> Solution Planner -> Interface Designer -> Boundary Tester -> Stepwise Reasoner -> Data Structure Planner,0.4666666666666667,170357
+Logic Implementer -> Summary Author,0.5,57842
+Complexity Estimator -> Consistency Checker -> Progress Summarizer -> Example Curator,0.3333333333333333,111785
+Counterexample Generator -> Dynamic Programming Specialist -> Task Decomposer,0.4,86513
+Final Presenter,0.36666666666666664,30732
+Docstring Author -> Regression Sentinel,0.3333333333333333,57335
+Approach Evaluator -> Solution Planner,0.43333333333333335,58170
+Algorithm Strategist -> Solution Reviewer -> Solution Refiner,0.3333333333333333,86130
+Algorithm Strategist -> Task Decomposer,0.4,58770
+Style & Hygiene Enforcer -> Performance Optimizer -> Problem Analyzer -> Robustness Engineer,0.4,112285
+Performance Optimizer -> Style & Hygiene Enforcer -> Robustness Engineer -> Problem Analyzer,0.4666666666666667,113339
+Test Designer -> Solution Refiner,0.43333333333333335,57983
+Regression Sentinel -> Solution Planner,0.4666666666666667,55140
+Solution Reviewer -> Data Structure Planner,0.43333333333333335,58570
+Regression Sentinel -> Solution Refiner,0.5333333333333333,57328
+Solution Planner -> Consistency Checker,0.3333333333333333,57420
+Strategy Selector -> Solution Planner -> Boundary Tester -> Performance Optimizer,0.23333333333333334,110507
+Answer Extractor -> Docstring Author -> Strategy Selector -> Task Decomposer,0.43333333333333335,110894
+Performance Optimizer -> Problem Analyzer -> Style & Hygiene Enforcer,0.4,84985
+Explanation Author -> Solution Planner -> Interface Designer,0.36666666666666664,86169
+Solution Refiner -> Solution Ranker -> Interface Designer -> Explanation Author,0.43333333333333335,112254
+Task Decomposer,0.4666666666666667,31582
+Regression Sentinel -> Solution Refiner,0.4,62443
+Data Structure Planner -> Strategy Selector -> Performance Optimizer -> Boundary Tester,0.4666666666666667,110144
+Solution Planner -> Style & Hygiene Enforcer,0.3333333333333333,58727
+Math Specialist -> Answer Extractor,0.43333333333333335,57270
+Task Decomposer -> Docstring Author,0.4666666666666667,59373
+Regression Sentinel,0.4,30051
+Strategy Selector,0.23333333333333334,30207
+Task Decomposer -> Summary Author,0.26666666666666666,58530
+Solution Planner -> Assumption Checker -> Comment & Hint Writer -> Summary Author,0.4,111478
+Algorithm Strategist -> Solution Reviewer,0.36666666666666664,59317
+Task Decomposer,0.3333333333333333,31713
+Solution Refiner -> Final Presenter -> Solution Ranker,0.5,83807
+Output Specifier -> Summary Author,0.43333333333333335,57120
+Solution Refiner -> Regression Sentinel -> Algorithm Strategist,0.36666666666666664,83910
+Performance Optimizer -> Problem Analyzer -> Style & Hygiene Enforcer -> Solution Planner -> Interface Designer -> Explanation Author,0.36666666666666664,167207
+Math Specialist -> Logic Implementer,0.4,56820
+Test Designer -> Solution Planner -> Interface Designer -> Boundary Tester,0.5,112130
+Final Presenter,0.4,30852
+Input/State Inspector,0.3333333333333333,30785
+Comment & Hint Writer -> Assumption Checker,0.36666666666666664,57900
+Assumption Checker -> Summary Author,0.3333333333333333,57150
+Solution Reviewer,0.4,30947
+Final Presenter -> Bug Hunter -> Requirement Extractor -> Summary Author -> Test Designer,0.3333333333333333,140130
+Assumption Checker -> Summary Author -> Comment & Hint Writer -> Stepwise Reasoner,0.36666666666666664,114414
+Comment & Hint Writer -> Summary Author,0.26666666666666666,57360
+Algorithm Strategist -> Solution Reviewer -> Solution Planner -> Solution Refiner,0.36666666666666664,113977
+Task Decomposer -> Docstring Author,0.36666666666666664,59283
+Answer Extractor -> Approach Evaluator,0.43333333333333335,57454
+Solution Planner -> Test Designer -> Constraint Analyzer -> Quality Auditor,0.36666666666666664,112381
+Regression Sentinel -> Docstring Author,0.26666666666666666,57149
+Counterexample Generator -> Approach Evaluator,0.4666666666666667,58170
+Solution Reviewer -> Math Specialist -> Logic Implementer,0.4,86178
+Solution Planner -> Test Designer -> Constraint Analyzer,0.3333333333333333,86564
+Data Structure Planner -> Solution Planner -> Consistency Checker,0.4,86257
+Solution Planner -> Input/State Inspector -> Quality Gatekeeper,0.4,84551
+Data & Arrays Specialist -> Solution Reviewer,0.43333333333333335,56880
+Conflict Resolver -> Logic Implementer,0.43333333333333335,57160
+Solution Planner -> Test Designer -> Constraint Analyzer,0.43333333333333335,86116
+Data Structure Planner -> Final Presenter,0.43333333333333335,57324
+Docstring Author -> Regression Sentinel,0.43333333333333335,56825
+Final Presenter -> Assumption Checker -> Test Designer -> Graph & Combinatorics Specialist,0.5,112378
+Interface Designer -> Solution Planner,0.5,57447
+Regression Sentinel -> Stepwise Reasoner -> Data Structure Planner,0.4666666666666667,85069
+Summary Author -> Logic Implementer,0.43333333333333335,58321
+Data Structure Planner -> Stepwise Reasoner,0.3333333333333333,58874
+Data & Arrays Specialist -> Edge Case Planner,0.36666666666666664,57090
+Style & Hygiene Enforcer -> Problem Analyzer,0.43333333333333335,59383
+Solution Planner -> Task Decomposer,0.43333333333333335,58461
