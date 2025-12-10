@@ -30,7 +30,8 @@ def evaluate_objectives(workflow):
 # dominate function
 # The first element is token, and the second element is pass@k value.
 # We want to minimize the token value while maximing the pass@k value.
-def dominates(a, b): return np.all(a <= b) and np.any(a < b)
+# def dominates(a, b): return np.all(a <= b) and np.any(a < b)
+def dominates(a, b): return a[1] < b[1]
 
 # Non-dominated sort.
 def non_dominated_sort(pop_objs):

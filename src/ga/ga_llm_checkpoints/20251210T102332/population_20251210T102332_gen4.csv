@@ -1,0 +1,101 @@
+workflow_roles,pass_at_k,tokens
+Progress Summarizer -> Dynamic Programming Specialist,0.5666666666666667,57970
+Assumption Checker,0.3,30030
+Regression Sentinel -> Solution Planner,0.5666666666666667,57043
+Answer Extractor,0.5,30369
+Dynamic Programming Specialist,0.4666666666666667,30821
+Regression Sentinel -> Docstring Author,0.5333333333333333,57452
+Answer Extractor,0.4666666666666667,30509
+Regression Sentinel -> Solution Refiner,0.5333333333333333,57328
+Task Decomposer,0.4666666666666667,31582
+Answer Extractor,0.4666666666666667,30479
+Assumption Checker,0.4666666666666667,30824
+Test Designer -> Solution Planner -> Constraint Analyzer,0.5333333333333333,86463
+Summary Author,0.43333333333333335,30934
+Regression Sentinel,0.43333333333333335,30127
+Input/State Inspector,0.43333333333333335,30544
+Dynamic Programming Specialist -> Task Decomposer,0.5,58327
+Test Designer -> Final Presenter,0.5,62160
+Progress Summarizer -> Correctness Verifier -> Task Decomposer,0.5333333333333333,85849
+Test Designer -> Constraint Analyzer,0.5,58050
+Logic Implementer -> Test Designer,0.5,58290
+Solution Reviewer -> Progress Summarizer,0.4,57240
+Summary Author,0.4,30957
+Docstring Author,0.43333333333333335,30781
+Answer Extractor,0.4666666666666667,30401
+Constraint Analyzer -> Test Designer,0.43333333333333335,59667
+Solution Planner -> Input/State Inspector,0.26666666666666666,58047
+Solution Planner,0.3333333333333333,30718
+Docstring Author,0.43333333333333335,31051
+Regression Sentinel,0.36666666666666664,30094
+Solution Reviewer,0.4,31330
+Logic Implementer -> Regression Sentinel,0.4,57541
+Assumption Checker -> Final Presenter -> Docstring Author -> Task Decomposer,0.43333333333333335,115171
+Solution Planner -> Regression Sentinel -> Answer Extractor,0.3333333333333333,84383
+Dynamic Programming Specialist,0.43333333333333335,30940
+Strategy Selector -> Performance Optimizer -> Assumption Checker -> Final Presenter,0.5,110543
+Dynamic Programming Specialist -> Answer Extractor,0.36666666666666664,57000
+Task Decomposer -> Docstring Author,0.5333333333333333,59415
+Final Presenter,0.3,30552
+Solution Reviewer,0.43333333333333335,31125
+Answer Extractor,0.36666666666666664,30461
+Solution Planner -> Logic Implementer,0.36666666666666664,58129
+Regression Sentinel -> Solution Planner,0.43333333333333335,57351
+Input/State Inspector -> Progress Summarizer,0.4666666666666667,58019
+Test Designer -> Solution Planner -> Input/State Inspector -> Answer Extractor,0.4666666666666667,112161
+Summary Author -> Test Designer -> Solution Planner -> Input/State Inspector,0.36666666666666664,113965
+Logic Implementer -> Task Decomposer,0.43333333333333335,58503
+Stepwise Reasoner -> Data Structure Planner -> Task Decomposer,0.36666666666666664,85440
+Solution Planner -> Regression Sentinel -> Dynamic Programming Specialist,0.4,84647
+Solution Planner -> Test Designer,0.4,57513
+Answer Extractor -> Dynamic Programming Specialist,0.36666666666666664,57439
+Comment & Hint Writer,0.4,30839
+Input/State Inspector,0.43333333333333335,30881
+Test Designer,0.4,31227
+Data Structure Planner -> Regression Sentinel -> Test Designer -> Constraint Analyzer,0.4666666666666667,113263
+Solution Refiner -> Regression Sentinel,0.5,57010
+Test Designer -> Solution Planner -> Constraint Analyzer,0.5333333333333333,86400
+Progress Summarizer -> Task Decomposer,0.4,58290
+Task Decomposer -> Strategy Selector -> Performance Optimizer,0.43333333333333335,86151
+Solution Planner -> Regression Sentinel -> Logic Implementer -> Conflict Resolver,0.36666666666666664,110158
+Conflict Resolver,0.36666666666666664,30211
+Problem Analyzer -> Conflict Resolver,0.43333333333333335,58166
+Data Structure Planner -> Regression Sentinel -> Solution Planner,0.43333333333333335,84427
+Final Presenter -> Logic Implementer -> Conflict Resolver,0.4,84561
+Final Presenter -> Test Designer,0.36666666666666664,57825
+Dynamic Programming Specialist -> Solution Planner,0.3333333333333333,57790
+Solution Planner -> Logic Implementer,0.4666666666666667,58099
+Task Decomposer -> Conflict Resolver,0.43333333333333335,58498
+Docstring Author -> Regression Sentinel,0.4666666666666667,57275
+Solution Reviewer -> Input/State Inspector,0.4,57270
+Test Designer -> Final Presenter,0.43333333333333335,57900
+Final Presenter -> Logic Implementer,0.36666666666666664,57090
+Summary Author -> Solution Refiner,0.43333333333333335,57450
+Regression Sentinel -> Summary Author,0.36666666666666664,56280
+Correctness Verifier -> Task Decomposer,0.4,58470
+Summary Author -> Regression Sentinel,0.36666666666666664,56340
+Solution Planner -> Test Designer,0.36666666666666664,57810
+Solution Reviewer -> Data Structure Planner,0.4,57750
+Docstring Author -> Answer Extractor,0.3,56520
+Solution Planner -> Constraint Analyzer,0.5,58170
+Dynamic Programming Specialist -> Interface Designer,0.4666666666666667,57480
+Logic Implementer -> Docstring Author,0.3333333333333333,57600
+Final Presenter -> Conflict Resolver,0.5,56820
+Data Structure Planner -> Regression Sentinel,0.4,62910
+Answer Extractor -> Solution Planner,0.36666666666666664,56340
+Answer Extractor -> Test Designer,0.3333333333333333,56490
+Answer Extractor -> Logic Implementer,0.43333333333333335,56670
+Regression Sentinel -> Answer Extractor,0.4,55710
+Regression Sentinel -> Solution Reviewer,0.4,56070
+Task Decomposer -> Docstring Author -> Dynamic Programming Specialist,0.43333333333333335,87210
+Solution Planner -> Dynamic Programming Specialist,0.36666666666666664,57690
+Performance Optimizer -> Problem Analyzer -> Style & Hygiene Enforcer -> Input/State Inspector,0.36666666666666664,112770
+Final Presenter -> Solution Planner,0.36666666666666664,57270
+Solution Planner -> Test Designer -> Regression Sentinel,0.3333333333333333,85470
+Progress Summarizer -> Solution Planner,0.4,57060
+Test Designer -> Data Structure Planner,0.36666666666666664,57660
+Regression Sentinel -> Stepwise Reasoner,0.43333333333333335,56520
+Regression Sentinel -> Data Structure Planner,0.4,61680
+Solution Planner -> Regression Sentinel,0.4,56820
+Progress Summarizer -> Correctness Verifier,0.3333333333333333,58260
+Input/State Inspector -> Task Decomposer,0.4,57570

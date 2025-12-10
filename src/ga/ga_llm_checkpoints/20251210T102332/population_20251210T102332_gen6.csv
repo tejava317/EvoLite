@@ -1,0 +1,101 @@
+workflow_roles,pass_at_k,tokens
+Progress Summarizer -> Dynamic Programming Specialist,0.5666666666666667,57970
+Test Designer,0.3,30030
+Regression Sentinel -> Solution Planner,0.5666666666666667,57043
+Answer Extractor,0.5,30369
+Dynamic Programming Specialist,0.4666666666666667,30821
+Regression Sentinel -> Docstring Author,0.5333333333333333,57452
+Regression Sentinel -> Solution Refiner,0.5333333333333333,57328
+Assumption Checker,0.4666666666666667,30824
+Task Decomposer -> Docstring Author,0.5333333333333333,59415
+Answer Extractor,0.4666666666666667,30401
+Answer Extractor,0.4666666666666667,30509
+Task Decomposer,0.4666666666666667,31582
+Answer Extractor,0.4666666666666667,30479
+Test Designer -> Solution Planner -> Constraint Analyzer,0.5333333333333333,86463
+Input/State Inspector,0.43333333333333335,30881
+Summary Author,0.43333333333333335,30934
+Input/State Inspector,0.43333333333333335,30544
+Dynamic Programming Specialist -> Task Decomposer,0.5,58327
+Test Designer -> Solution Planner -> Answer Extractor,0.5333333333333333,84870
+Assumption Checker -> Solution Planner,0.5,56820
+Answer Extractor -> Dynamic Programming Specialist,0.43333333333333335,56430
+Test Designer -> Regression Sentinel,0.5,57060
+Conflict Resolver -> Test Designer,0.36666666666666664,58200
+Logic Implementer -> Dynamic Programming Specialist,0.4666666666666667,57810
+Test Designer -> Task Decomposer,0.36666666666666664,58140
+Input/State Inspector -> Correctness Verifier,0.3,57900
+Test Designer -> Solution Planner -> Solution Reviewer,0.43333333333333335,85140
+Regression Sentinel -> Test Designer,0.4,56520
+Strategy Selector -> Assumption Checker -> Dynamic Programming Specialist,0.4,83430
+Performance Optimizer -> Assumption Checker,0.4,57600
+Correctness Verifier -> Test Designer,0.36666666666666664,64380
+Input/State Inspector -> Logic Implementer,0.43333333333333335,57750
+Task Decomposer -> Constraint Analyzer,0.43333333333333335,59310
+Final Presenter -> Progress Summarizer,0.36666666666666664,56880
+Problem Analyzer -> Docstring Author,0.4,57720
+Summary Author -> Constraint Analyzer,0.36666666666666664,57990
+Conflict Resolver -> Progress Summarizer,0.5,56370
+Task Decomposer -> Solution Refiner,0.36666666666666664,58800
+Conflict Resolver -> Input/State Inspector,0.4666666666666667,56850
+Assumption Checker -> Answer Extractor,0.5333333333333333,56820
+Strategy Selector -> Performance Optimizer -> Assumption Checker -> Input/State Inspector,0.3333333333333333,108780
+Test Designer -> Solution Planner -> Docstring Author,0.43333333333333335,85350
+Assumption Checker -> Task Decomposer,0.3333333333333333,57210
+Solution Refiner -> Docstring Author,0.4,57300
+Solution Planner -> Regression Sentinel -> Data Structure Planner,0.43333333333333335,83280
+Strategy Selector -> Assumption Checker -> Test Designer,0.3333333333333333,83280
+Solution Planner -> Final Presenter,0.36666666666666664,57510
+Data Structure Planner -> Regression Sentinel -> Solution Planner,0.4,85530
+Test Designer -> Solution Planner -> Summary Author,0.5,84210
+Test Designer -> Solution Planner -> Dynamic Programming Specialist,0.43333333333333335,84840
+Solution Planner -> Summary Author,0.36666666666666664,57420
+Test Designer -> Solution Planner -> Correctness Verifier,0.5,84930
+Conflict Resolver -> Strategy Selector,0.36666666666666664,56910
+Progress Summarizer -> Data Structure Planner,0.4666666666666667,56070
+Solution Reviewer -> Correctness Verifier,0.3333333333333333,58620
+Progress Summarizer -> Final Presenter,0.4,56310
+Strategy Selector -> Performance Optimizer -> Regression Sentinel,0.4,81750
+Final Presenter -> Solution Reviewer,0.5,56520
+Data Structure Planner -> Test Designer,0.4,57990
+Solution Planner -> Task Decomposer,0.43333333333333335,57510
+Logic Implementer -> Input/State Inspector,0.43333333333333335,56940
+Dynamic Programming Specialist -> Progress Summarizer,0.4666666666666667,57270
+Progress Summarizer -> Regression Sentinel,0.5,56490
+Task Decomposer -> Final Presenter,0.43333333333333335,58950
+Assumption Checker -> Final Presenter,0.5,57510
+Data Structure Planner -> Regression Sentinel -> Dynamic Programming Specialist,0.43333333333333335,83580
+Answer Extractor -> Docstring Author,0.43333333333333335,57180
+Answer Extractor -> Progress Summarizer,0.43333333333333335,56730
+Data Structure Planner -> Regression Sentinel -> Input/State Inspector,0.3333333333333333,83880
+Strategy Selector -> Performance Optimizer -> Assumption Checker -> Progress Summarizer,0.4,110520
+Constraint Analyzer -> Assumption Checker,0.26666666666666666,59820
+Solution Planner -> Input/State Inspector -> Regression Sentinel,0.4,82620
+Performance Optimizer -> Assumption Checker -> Dynamic Programming Specialist,0.4666666666666667,84840
+Answer Extractor -> Final Presenter,0.36666666666666664,56550
+Solution Planner -> Input/State Inspector,0.23333333333333334,56880
+Constraint Analyzer -> Input/State Inspector,0.4,57930
+Strategy Selector -> Performance Optimizer -> Assumption Checker -> Final Presenter,0.4,109290
+Task Decomposer -> Docstring Author -> Input/State Inspector,0.3333333333333333,87150
+Performance Optimizer -> Assumption Checker -> Test Designer,0.4,85020
+Progress Summarizer -> Answer Extractor,0.4,56850
+Regression Sentinel -> Solution Refiner,0.5,55560
+Strategy Selector -> Problem Analyzer,0.4,55770
+Strategy Selector -> Performance Optimizer -> Test Designer,0.26666666666666666,83760
+Task Decomposer -> Input/State Inspector,0.43333333333333335,58020
+Assumption Checker -> Correctness Verifier,0.4,58170
+Assumption Checker -> Docstring Author,0.43333333333333335,57930
+Problem Analyzer -> Solution Planner,0.36666666666666664,58050
+Performance Optimizer -> Assumption Checker -> Task Decomposer,0.4,84960
+Input/State Inspector -> Progress Summarizer,0.43333333333333335,57270
+Strategy Selector -> Performance Optimizer -> Assumption Checker -> Solution Reviewer,0.3333333333333333,110640
+Test Designer -> Solution Planner -> Constraint Analyzer,0.36666666666666664,84810
+Summary Author -> Final Presenter,0.4,57000
+Task Decomposer -> Docstring Author -> Solution Planner,0.36666666666666664,86940
+Solution Refiner -> Answer Extractor,0.4,56370
+Regression Sentinel -> Problem Analyzer,0.4666666666666667,56490
+Task Decomposer -> Docstring Author -> Test Designer,0.43333333333333335,86910
+Dynamic Programming Specialist -> Constraint Analyzer,0.36666666666666664,58410
+Dynamic Programming Specialist -> Test Designer,0.4,58380
+Dynamic Programming Specialist -> Logic Implementer,0.3,58380
+Strategy Selector -> Performance Optimizer -> Assumption Checker,0.16666666666666666,84360

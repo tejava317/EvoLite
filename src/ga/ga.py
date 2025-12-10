@@ -50,6 +50,9 @@ WORKFLOW_TYPE = "block"
 # Global dataset cache to avoid reloading
 _dataset_cache: Optional[BaseDataset] = None
 
+# Caching the workflow.
+workflow_set = set()
+
 # Get a dataset from specified task.
 def get_dataset(task_name: str) -> BaseDataset:
     """
@@ -79,7 +82,7 @@ def get_dataset(task_name: str) -> BaseDataset:
     return _dataset_cache
 
 # Fast fitness evaluation with the random number.
-def evaluate_fitness_fast(workflows, server_url: str) -> float:
+def evaluate_fitness_fast(workflows, num_problems, server_url: str) -> float:
     
     results = []
     for wf in workflows:
@@ -121,14 +124,14 @@ To avoid the timeout, we use the static batch size.
 
 """
 
-def evaluate_fitness_batch(workflows, server_url: str = None, batch_size: int = 15):
+def evaluate_fitness_batch(workflows, num_problems, server_url: str = None, batch_size: int = 15):
 
     async def _run():
         from src.evaluation_client import EvaluationClient, BlockConfig
         
         url = server_url or EVAL_SERVER_URL
 
-        task_name = workflows[0].task_name
+        task_name = args.task
         if len({wf.task_name for wf in workflows}) != 1:
             raise ValueError("All workflows must have the same task_name.")
 
@@ -158,7 +161,7 @@ def evaluate_fitness_batch(workflows, server_url: str = None, batch_size: int = 
             respond = await client.evaluate_batch_async(
                 workflows=batch_blocks,
                 task_name=task_name,
-                num_problems=NUM_EVAL_PROBLEMS,
+                num_problems=num_problems,
                 use_extractor=False,
                 seed=43211,
                 think=False,
@@ -190,7 +193,7 @@ Initialize the population of workflows.
         List of {"workflow": Workflow|BlockWorkflow, "fitness": float} dictionaries
 """
 
-def initialize_population(task_name: str, server_url: str, use_extractor: bool = True):
+def initialize_population(task_name: str, server_url: str, use_extractor: bool = True, initial_num_problem: int = 5):
 
     population = []
     workflows = []
@@ -201,7 +204,7 @@ def initialize_population(task_name: str, server_url: str, use_extractor: bool =
     else:
         eval_fn = evaluate_fitness_batch
 
-    for _ in range(args.population_size):
+    while len(population) < args.population_size:
         
         length = random.randint(1, args.max_workflow)
         blocks = []
@@ -212,11 +215,18 @@ def initialize_population(task_name: str, server_url: str, use_extractor: bool =
             block = AgentBlock(role)
             blocks.append(block)
         
-        workflow = BlockWorkflow(task_name=task_name, blocks=blocks)    # BlockWorkflow
+        workflow = BlockWorkflow(task_name=task_name, blocks=blocks)
+        
+        wf_string = workflow.workflow_to_string()
+
+        if wf_string in workflow_set:
+            continue
+
+        workflow_set.add(wf_string)
         workflows.append(workflow)
         population.append({"workflow": workflow, "fitness": -float("inf")})
     
-    result = eval_fn(workflows, server_url)
+    result = eval_fn(workflows, initial_num_problem, server_url)
     
     for i in range(len(workflows)):
         if args.fast:
@@ -290,13 +300,21 @@ def mutate(entry) -> BlockWorkflow:
     w = entry["workflow"].blocks
     w_len = len(w)
 
-    # Push if workflow length is nearer to MAX_WORKFLOW_LENGTH
-    # Use exponential decay.
+    # Flexibly alter the workflow length.
+    # Regarding a momentum by storing the evolution direction.
     max_len = args.max_workflow
+    deletion_bound = int(max_len * 0.7)
+    addition_bound = int(max_len * 0.3)
+
+    # if max_len >= deletion_bound:
+    #     return deletion(entry)
+    # elif max_len <= deletion_bound:
+    #     return addition(entry)
+    # else:
+
+    
     x = w_len / max_len
     prob = 1 - x
-    # k = 0.4
-    # prob = math.exp(-k * x)
     
     if random.random() < prob:
         return addition(entry)
@@ -346,7 +364,10 @@ def run_ga(
         print(f"Generations: {args.generation}")
         print(f"Evaluation: Batch with size 15.")
         print(f"Using extractor: {use_extractor}")
+        print(f"Max workflow number: {args.max_workflow}")
         print(f"Fast: {args.fast}")
+        print(f"Mutation Rate: {args.mutation_rate}")
+        print(f"Phase: {args.num_phase}")
         print(f"{'='*60}\n")
     
     # Choose evaluation function
@@ -360,7 +381,15 @@ def run_ga(
     if verbose:
         print("Initializing population...")
 
-    population = initialize_population(task_name, server_url, use_extractor)
+    # Alter initial problem number mode.num_problem = args.problem_number
+    phase_num = args.num_phase
+    phase_num_problem = [
+        (args.num_problem * (i + 1)) // phase_num
+        for i in range(phase_num)
+    ]
+    assert len(phase_num_problem) > 0, "The phase does NOT work."
+
+    population = initialize_population(task_name, server_url, use_extractor, phase_num_problem[0])
     
     for generation in range(args.generation):
         
@@ -382,7 +411,7 @@ def run_ga(
         child_population = []
         num_children = args.population_size - len(new_population)
         
-        while len(child_population) < num_children :
+        while len(child_population) < num_children:
             
             parent1 = select(population)
             parent2 = select(population)
@@ -392,14 +421,26 @@ def run_ga(
             child["workflow"] = child_workflow
             
             # Mutation, Essential Progress.
-            child_workflow = mutate(child)
-            child["workflow"] = child_workflow
+            if random.random() < args.mutation_rate:
+                child_workflow = mutate(child)
+                child["workflow"] = child_workflow
             
+            child_wf_string = child_workflow.workflow_to_string()
+
+            if child_wf_string in workflow_set:
+                continue
+
+            workflow_set.add(child_wf_string)
             child_workflows.append(child_workflow)
             child_population.append(child)
         
         # Perform fitness evaluation.
-        result = eval_fn(child_workflows, server_url)
+        total_generations = args.generation
+        num_phases = len(phase_num_problem)
+        gens_per_phase = max(1, total_generations // num_phases)
+        idx = min(generation // gens_per_phase, num_phases - 1)
+        
+        result = eval_fn(child_workflows, phase_num_problem[idx], server_url)
         for i in range(len(child_population)):
             if args.fast:
                 child_population[i]["fitness"] = result[i]
@@ -414,6 +455,9 @@ def run_ga(
             # Save with .csv file and plot the pareto front.
             save_checkpoint_csv(population, f"{key}_{generation+1}")
             plot_pareto(population, f"{key}_{generation+1}")
+
+    if verbose:
+        print("Done.")
 
     return population
 
@@ -465,6 +509,8 @@ if __name__ == "__main__":
     parser.add_argument("--quiet", action="store_true", help="Suppress output")
     parser.add_argument("--batch", action="store_true", help="Perform batch fitness evaluation")
     parser.add_argument("--fast", action="store_true", help="Random number fast evaluation")
+    parser.add_argument("--alter-question", action="store_true", help="Alter question mode")
+
 
     # GA information
     parser.add_argument("--population-size", type=int, default=100, help="The size of population")
@@ -473,12 +519,23 @@ if __name__ == "__main__":
     parser.add_argument("--mutation-rate", type=float, default=0.1, help="The rate of mutation")
     parser.add_argument("--crossover-rate", type=float, default=1.0, help="The rate of crossover")
     parser.add_argument("--max-workflow", type=int, default=5, help="The length of max workflow")
+    parser.add_argument("--num_problem", type=int, default=30, help="The number of problems")
+    parser.add_argument("--num_phase", type=int, default=1, help="The number of problem phases.")
 
     # File name information
     parser.add_argument("--key", type=str, default="ga_exp", help="The key to distinguish the experiment")
     
     args = parser.parse_args()
     
+    # Run a single workflow evaluation.
+    # role = random_agent()
+    # block = AgentBlock(role)
+    # workflow = BlockWorkflow(task_name="MBPP", blocks=[block])    # BlockWorkflow
+    # result = evaluate_fitness_batch([workflow], args.num_problem, EVAL_SERVER_URL)
+    # print(f"Workflow: {workflow.workflow_to_string()}")
+    # print(f"Pass@1: {result[0].pass_at_1}")
+    # print(f"Total Tokens: {result[0].total_tokens}")
+
 
     final_population = run_ga(
         task_name=args.task,
@@ -488,21 +545,3 @@ if __name__ == "__main__":
         use_batch=args.batch,
         key=args.key
     )
-
-
-    # # Print final best workflow
-    # for wk in final_population:
-    #     if isinstance(wk['workflow'], BlockWorkflow):
-    #         wk['workflow']._expand_blocks_to_agents()
-    #         print(f"\nBest workflow roles: {[a.role for a in wk['workflow'].agents]}")
-    #     else:
-    #         print(f"\nBest workflow roles: {[a.role for a in wk['workflow'].agents]}")
-    #     pass_at_k_value = wk['fitness']["pass_at_k"]
-    #     print(f"Fitness: {pass_at_k_value:.4f}")
-
-# 0. 현재는 addtion만 하고 있음. (workflow: LLM operator을 써도 됨. 우리가 GA로 정말 많은 것을 확인해볼 수 있다.)
-# 좋아. 우리의 결론은 아니었으면 좋겠다.
-# 1. addition, deletion을 개체 길이에 따라 비율 조절
-# 2. 처음에는 문제 적게 나중에 많이 (seeding)
-# 3. 쌓여있는 애들 재평가 (대신 적은 문제)
-# 4. 의미론적인 방법으로 operator를 만들기 (고민을 해보는 것은 의미가 있음)

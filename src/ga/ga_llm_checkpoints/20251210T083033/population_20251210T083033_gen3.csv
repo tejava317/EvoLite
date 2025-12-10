@@ -1,0 +1,101 @@
+workflow_roles,pass_at_k,tokens
+Correctness Verifier,0.36666666666666664,30300
+Solution Refiner,0.5333333333333333,30527
+Solution Refiner,0.5,30450
+Strategy Selector,0.4,30362
+Solution Refiner,0.5333333333333333,30540
+Progress Summarizer,0.4,30480
+Performance Optimizer,0.4,30490
+Interface Designer -> Solution Refiner,0.5333333333333333,57150
+Solution Refiner,0.5,30569
+Solution Refiner,0.4,30540
+Logic Implementer -> Progress Summarizer,0.5333333333333333,58140
+Graph & Combinatorics Specialist -> Regression Sentinel,0.5,55500
+Solution Refiner,0.4666666666666667,32520
+Quality Auditor,0.43333333333333335,30733
+Progress Summarizer,0.36666666666666664,30665
+Bug Hunter -> Approach Evaluator,0.5333333333333333,58400
+Bug Hunter,0.43333333333333335,31298
+Interface Designer -> Regression Sentinel,0.4666666666666667,55920
+Progress Summarizer -> Regression Sentinel,0.5,56130
+Dynamic Programming Specialist,0.4,30839
+Input/State Inspector -> Algorithm Strategist,0.5333333333333333,58513
+Progress Summarizer,0.3333333333333333,30749
+Consensus Builder -> Regression Sentinel,0.43333333333333335,55650
+Comment & Hint Writer,0.4,30964
+Docstring Author -> Strings & Text Specialist,0.5,56520
+Example Curator,0.36666666666666664,30909
+Dynamic Programming Specialist -> Boundary Tester,0.5,56520
+Logic Implementer -> Counterexample Generator -> Strings & Text Specialist -> Boundary Tester,0.5333333333333333,111422
+Solution Planner,0.4,31170
+Comment & Hint Writer -> Solution Refiner,0.5,58110
+Strategy Selector -> Consensus Builder,0.4666666666666667,56580
+Summary Author -> Final Presenter -> Data & Arrays Specialist -> Conflict Resolver,0.5333333333333333,112770
+Edge Case Planner,0.36666666666666664,31350
+Solution Drafter -> Strategy Selector -> Consensus Builder,0.5,83580
+Solution Drafter -> Solution Refiner,0.4666666666666667,56880
+Strategy Selector -> Quality Auditor,0.4,56297
+Conflict Resolver -> Comment & Hint Writer,0.43333333333333335,56790
+Progress Summarizer -> Solution Refiner,0.43333333333333335,56790
+Robustness Engineer,0.3333333333333333,31380
+Progress Summarizer -> Dynamic Programming Specialist -> Solution Planner,0.5,85437
+Progress Summarizer -> Graph & Combinatorics Specialist -> Regression Sentinel,0.43333333333333335,83096
+Solution Planner -> Graph & Combinatorics Specialist,0.3333333333333333,57870
+Strategy Selector,0.43333333333333335,30573
+Progress Summarizer -> Robustness Engineer,0.4,57440
+Solution Drafter -> Consensus Builder,0.5,57212
+Solution Refiner -> Counterexample Generator,0.4,57627
+Strings & Text Specialist -> Strategy Selector,0.3,56100
+Progress Summarizer -> Dynamic Programming Specialist -> Solution Planner,0.4,84663
+Progress Summarizer -> Performance Optimizer -> Comment & Hint Writer,0.5,85397
+Regression Sentinel -> Consensus Builder,0.3333333333333333,56908
+Docstring Author -> Conflict Resolver -> Strings & Text Specialist -> Comment & Hint Writer,0.4666666666666667,111151
+Progress Summarizer -> Input/State Inspector,0.36666666666666664,57455
+Dynamic Programming Specialist,0.4666666666666667,30765
+Robustness Engineer -> Summary Author -> Conflict Resolver -> Data & Arrays Specialist,0.4666666666666667,113726
+Approach Evaluator -> Bug Hunter,0.4,59229
+Strategy Selector -> Interface Designer,0.43333333333333335,56070
+Problem Analyzer -> Example Curator,0.3333333333333333,58080
+Solution Refiner -> Solution Planner -> Comment & Hint Writer,0.4,84025
+Approach Evaluator -> Bug Hunter,0.3333333333333333,58539
+Progress Summarizer -> Strategy Selector,0.4,57628
+Comment & Hint Writer -> Task Decomposer -> Bug Hunter,0.43333333333333335,85644
+Interface Designer -> Input/State Inspector,0.3333333333333333,57454
+Consensus Builder -> Strategy Selector,0.5,58036
+Problem Analyzer -> Feedback Integrator -> Comment & Hint Writer -> Conflict Resolver,0.43333333333333335,113097
+Dynamic Programming Specialist,0.4,32715
+Solution Refiner -> Counterexample Generator,0.4,57927
+Dynamic Programming Specialist -> Performance Optimizer -> Comment & Hint Writer -> Solution Drafter,0.36666666666666664,114080
+Strings & Text Specialist -> Boundary Tester,0.4666666666666667,56315
+Regression Sentinel,0.43333333333333335,30057
+Solution Drafter -> Strategy Selector -> Solution Refiner,0.4,82710
+Solution Refiner -> Comment & Hint Writer,0.4,57789
+Bug Hunter,0.3333333333333333,31155
+Input/State Inspector -> Performance Optimizer,0.3333333333333333,58421
+Counterexample Generator -> Dynamic Programming Specialist -> Solution Drafter,0.4,86201
+Solution Refiner,0.4,30809
+Docstring Author -> Quality Auditor,0.4,57420
+Strategy Selector -> Progress Summarizer,0.43333333333333335,56456
+Comment & Hint Writer -> Bug Hunter,0.43333333333333335,58563
+Progress Summarizer -> Complexity Estimator,0.4,57663
+Progress Summarizer -> Interface Designer,0.43333333333333335,57900
+Comment & Hint Writer -> Logic Implementer -> Task Decomposer,0.3333333333333333,85294
+Output Specifier -> Problem Analyzer,0.4,57360
+Strings & Text Specialist -> Edge Case Planner,0.4,57701
+Progress Summarizer,0.43333333333333335,30761
+Bug Hunter -> Comment & Hint Writer,0.36666666666666664,58020
+Approach Evaluator -> Bug Hunter,0.3333333333333333,58719
+Progress Summarizer -> Dynamic Programming Specialist,0.4666666666666667,57540
+Solution Refiner -> Strategy Selector,0.4666666666666667,56490
+Performance Optimizer -> Solution Drafter,0.36666666666666664,57420
+Approach Evaluator -> Bug Hunter -> Solution Refiner,0.4666666666666667,86721
+Input/State Inspector,0.43333333333333335,30839
+Progress Summarizer -> Consensus Builder -> Comment & Hint Writer,0.26666666666666666,84199
+Dynamic Programming Specialist,0.3333333333333333,30975
+Comment & Hint Writer -> Interface Designer -> Regression Sentinel,0.43333333333333335,84280
+Strategy Selector -> Comment & Hint Writer -> Logic Implementer -> Dynamic Programming Specialist,0.3333333333333333,110457
+Problem Analyzer -> Feedback Integrator,0.36666666666666664,58613
+Approach Evaluator -> Bug Hunter,0.4,58989
+Solution Refiner -> Interface Designer,0.4666666666666667,57088
+Boundary Tester -> Counterexample Generator -> Algorithm Strategist,0.36666666666666664,86487
+Boundary Tester -> Counterexample Generator -> Consensus Builder,0.3333333333333333,86872
