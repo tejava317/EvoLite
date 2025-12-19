@@ -1,15 +1,10 @@
 # src/llm/client.py
-"""
-LLM Client supporting both OpenAI and RunPod custom servers.
-"""
 from openai import OpenAI
-from src.config import API_KEY, BASE_URL, USE_RUNPOD
+from src.config import API_KEY, BASE_URL
 
 
 def get_client():
-    """
-    Get OpenAI client configured for either RunPod or OpenAI.
-    """
+    """Get OpenAI client configured for OpenAI or vLLM."""
     if BASE_URL:
         return OpenAI(api_key=API_KEY, base_url=BASE_URL)
     else:
@@ -37,61 +32,28 @@ class LLMClient:
         self.client = get_client()
         self.model = model
         self.temperature = temperature
-        self._use_runpod = USE_RUNPOD
     
     def generate(self,
                  system_prompt: str,
                  user_content: str,
                  max_tokens: int = 1000) -> dict:
-        """
-        Generate a response from the LLM.
+        """Generate a response from the LLM."""
+        response = self.client.chat.completions.create(
+            model=self.model,
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_content}
+            ],
+            temperature=self.temperature,
+            max_tokens=max_tokens,
+        )
         
-        Handles differences between OpenAI and RunPod APIs.
-        """
-        try:
-            # Build request parameters
-            params = {
-                "model": self.model,
-                "messages": [
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_content}
-                ],
-                "temperature": self.temperature,
-            }
-            
-            # Some models (like o1/o3) use max_completion_tokens instead of max_tokens
-            # Try max_completion_tokens first for RunPod, fall back to max_tokens
-            if self._use_runpod:
-                params["max_completion_tokens"] = max_tokens
-            else:
-                params["max_tokens"] = max_tokens
-            
-            response = self.client.chat.completions.create(**params)
-            
-            return {
-                "content": response.choices[0].message.content,
-                "prompt_tokens": response.usage.prompt_tokens if response.usage else 0,
-                "response_tokens": response.usage.completion_tokens if response.usage else 0,
-                "total_tokens": response.usage.total_tokens if response.usage else 0
-            }
-        except Exception as e:
-            error_str = str(e)
-            # Handle the case where max_completion_tokens isn't supported
-            if "max_completion_tokens" in error_str and "max_tokens" not in params:
-                # Retry with max_tokens
-                params.pop("max_completion_tokens", None)
-                params["max_tokens"] = max_tokens
-                try:
-                    response = self.client.chat.completions.create(**params)
-                    return {
-                        "content": response.choices[0].message.content,
-                        "prompt_tokens": response.usage.prompt_tokens if response.usage else 0,
-                        "response_tokens": response.usage.completion_tokens if response.usage else 0,
-                        "total_tokens": response.usage.total_tokens if response.usage else 0
-                    }
-                except Exception as e2:
-                    raise Exception(f"Error generating response: {str(e2)}")
-            raise Exception(f"Error generating response: {str(e)}")
+        return {
+            "content": response.choices[0].message.content,
+            "prompt_tokens": response.usage.prompt_tokens if response.usage else 0,
+            "response_tokens": response.usage.completion_tokens if response.usage else 0,
+            "total_tokens": response.usage.total_tokens if response.usage else 0
+        }
     
     def generate_batch(self,
                       system_prompt: str,

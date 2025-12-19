@@ -4,18 +4,19 @@ import os
 import random
 import re
 import time
+from copy import deepcopy
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Dict, List, Optional, Tuple
 
 import numpy as np  # type: ignore
 
-from src.agents.block import AgentBlock
+from src.agents.block import AgentBlock, CompositeBlock
 from src.agents.workflow_block import BlockWorkflow
 from src.config import ROLE_DESCRIPTIONS
 from src.datasets import MBPPDataset, BaseDataset
 from src.evaluation.pass_at_k import quick_evaluate
-from src.ga.multi_objective import crowding_distance, non_dominated_sort
+from src.ga.multi_objective import crowding_distance, non_dominated_sort, plot_pareto
 from src.ga.checkpoint import save_checkpoint_csv
 from src.llm.client import PromptGenerator
 
@@ -23,7 +24,7 @@ from src.llm.client import PromptGenerator
 print = functools.partial(print, flush=True)
 
 # Run-scoped paths
-RUN_LOG_DIR = "logs/ga_llm_runs"
+RUN_LOG_DIR = "src/ga/result"
 CHECKPOINT_DIR = "src/ga/ga_llm_checkpoints"
 GRAPH_DIR = "src/ga/ga_llm_graph"
 
@@ -43,7 +44,7 @@ def log_line(msg: str):
 # High-level GA settings
 # =======================
 POPULATION_SIZE = 100
-INIT_SEEDED_POPULATION = 50  # Stratified seeding target
+INIT_SEEDED_POPULATION = 15  # Stratified seeding target (5 per type)
 MAX_GENERATIONS = 10
 MUTATION_RATE = 0.7  # Increased to promote exploration
 CROSSOVER_RATE = 0.3
@@ -52,8 +53,9 @@ AGNOSTIC_RATIO = 0.2  # Inside mutation branch
 NUM_EVAL_PROBLEMS = 30  # Fixed MBPP subset size
 EVAL_SEED = 1337
 
-MIN_COST_LIMIT = 1200
-MAX_COST_LIMIT = 12000
+# Cost limits will be set dynamically based on initial population evaluation
+MIN_COST_LIMIT = None  # Will be set dynamically
+MAX_COST_LIMIT = None  # Will be set dynamically
 SCORE_IMPROVE_THRESHOLD = 0.01
 PATIENCE_LIMIT = 3
 
@@ -63,7 +65,7 @@ LLM_MAX_TOKENS = 480
 ROLE_LIST = ROLE_DESCRIPTIONS
 TASK_NAME = "MBPP"
 USE_LLM = True  # toggled via CLI
-RUN_LOG_DIR = "logs/ga_llm_runs"
+RUN_LOG_DIR = "src/ga/result"
 CHECKPOINT_DIR = "src/ga/ga_llm_checkpoints"
 GRAPH_DIR = "src/ga/ga_llm_graph"
 
@@ -226,14 +228,39 @@ class Individual:
     patience: int = 0
     prev_score: float = 0.0
     tokens_from_llm: int = 0
+    eval_count: int = 0  # Number of times this individual has been evaluated
+    generation_age: int = 0  # Number of generations this individual has survived
+    total_evaluated_problems: int = 0  # Total number of problems evaluated across all evaluations
+    was_in_buffer: bool = False  # Track if this individual was in buffer before (to prevent re-entry)
 
     def __post_init__(self):
         self.graph = parse_arrow_syntax(self.code)
 
-    def update_fitness(self, score: float, cost: float):
+    def update_fitness(self, score: float, cost: float, num_problems: int = None):
+        """
+        Update fitness using weighted average if this is a re-evaluation.
+        
+        Args:
+            score: New pass@1 score from this evaluation
+            cost: New token cost from this evaluation
+            num_problems: Number of problems evaluated in this round (for weighted average)
+        """
         self.prev_score = self.score
-        self.score = score
-        self.cost = cost + self.tokens_from_llm  # penalize heavy LLM edits
+        
+        # If this is a re-evaluation and we have previous data, use weighted average
+        if num_problems is not None and self.total_evaluated_problems > 0:
+            # Weighted average: (old_total * old_value + new_num * new_value) / (old_total + new_num)
+            total_problems = self.total_evaluated_problems + num_problems
+            self.score = (self.total_evaluated_problems * self.score + num_problems * score) / total_problems
+            self.cost = (self.total_evaluated_problems * self.cost + num_problems * cost) / total_problems
+            self.total_evaluated_problems = total_problems
+        else:
+            # First evaluation or num_problems not provided
+            self.score = score
+            self.cost = cost + self.tokens_from_llm  # penalize heavy LLM edits
+            if num_problems is not None:
+                self.total_evaluated_problems = num_problems
+        
         return self
 
 
@@ -355,6 +382,41 @@ class LLMController:
         self._loop = None
         self._pending_batch = []  # Queue for batch requests
         self._batch_lock = asyncio.Lock()
+        
+        # Test connection on initialization
+        self._test_connection()
+
+    def _test_connection(self):
+        """Test LLM connection on initialization."""
+        try:
+            self._ensure_loop()
+            import asyncio
+            
+            async def _test():
+                try:
+                    # Quick connection test
+                    test_result = await self.vllm_client.generate(
+                        system_prompt="Test",
+                        user_content="Test",
+                        max_tokens=10,
+                    )
+                    if test_result.status == "COMPLETED":
+                        log_line(f"[LLMController] Connection test successful: {self.vllm_client.base_url}")
+                    else:
+                        log_line(f"[LLMController] Connection test failed: {test_result.error}")
+                        log_line(f"[LLMController] Will use fallback mode when LLM calls fail")
+                except Exception as e:
+                    log_line(f"[LLMController] Connection test error: {e}")
+                    log_line(f"[LLMController] Will use fallback mode when LLM calls fail")
+            
+            # Run test in background (non-blocking)
+            try:
+                self._loop.run_until_complete(_test())
+            except:
+                pass  # Ignore test failures, will use fallback
+        except Exception as e:
+            log_line(f"[LLMController] Connection test setup failed: {e}")
+            log_line(f"[LLMController] Will use fallback mode when LLM calls fail")
 
     def _increment_and_check(self) -> bool:
         self.call_count += 1
@@ -453,6 +515,7 @@ def get_dataset() -> BaseDataset:
 # =======================
 def stratified_seed_population(llm: Optional[LLMController]) -> List[Individual]:
     seeds: List[Individual] = []
+    seen_codes = set()  # Track unique topologies to avoid duplicates
 
     # Pure random seeding if LLM disabled/unavailable
     if not USE_LLM or llm is None:
@@ -462,17 +525,26 @@ def stratified_seed_population(llm: Optional[LLMController]) -> List[Individual]
             (random_branching, "seed_branch"),
             (random_test_driven, "seed_test"),
         ]
-        while len(seeds) < POPULATION_SIZE:
+        max_attempts = POPULATION_SIZE * 10  # Prevent infinite loop
+        attempts = 0
+        while len(seeds) < POPULATION_SIZE and attempts < max_attempts:
+            attempts += 1
             fn, name = random.choice(generators)
-            seeds.append(Individual(code=canonicalize_topology(fn()), lineage=name))
+            topo = canonicalize_topology(fn())
+            if topo not in seen_codes:
+                seen_codes.add(topo)
+                seeds.append(Individual(code=topo, lineage=name))
+        if len(seeds) < POPULATION_SIZE:
+            log_line(f"[Seed] WARNING: Only generated {len(seeds)} unique seeds (target: {POPULATION_SIZE})")
         return seeds
 
     agent_pool_desc = ", ".join(ROLE_LIST[:50])
+    # Each type gets 5 seeds, total 15 (3 types × 5 = 15)
     counts = {
-        "linear": int(0.30 * INIT_SEEDED_POPULATION),
-        "reflex": int(0.30 * INIT_SEEDED_POPULATION),
-        "branch": int(0.20 * INIT_SEEDED_POPULATION),
-        "test": INIT_SEEDED_POPULATION - int(0.30 * INIT_SEEDED_POPULATION) * 2 - int(0.20 * INIT_SEEDED_POPULATION),
+        "linear": 5,
+        "reflex": 5,
+        "branch": 5,
+        "test": 0,  # Skip test type to keep total at 15
     }
 
     templates = [
@@ -487,6 +559,8 @@ def stratified_seed_population(llm: Optional[LLMController]) -> List[Individual]
     # Collect all prompts first, then batch process
     for key, template, fallback_fn in templates:
         target = counts[key]
+        if target == 0:
+            continue
         log_line(f"[Seed] Preparing {target} {key} seeds for batch request...")
         
         # Prepare batch of prompts
@@ -506,7 +580,8 @@ def stratified_seed_population(llm: Optional[LLMController]) -> List[Individual]
             )
             log_line(f"[Seed] Batch response received: {len(batch_results)} results")
             
-            # Process batch results
+            # Process batch results with duplicate filtering
+            duplicates_skipped = 0
             for i, (topo, tokens) in enumerate(batch_results):
                 if topo is None:
                     log_line(f"[Seed] {key} batch[{i}]: LLM returned None, using fallback")
@@ -516,32 +591,74 @@ def stratified_seed_population(llm: Optional[LLMController]) -> List[Individual]
                 if not topo:
                     log_line(f"[Seed] {key} batch[{i}]: filtered topo empty, using fallback")
                     topo = fallback_fn()
+                
+                # Check for duplicates
+                if topo in seen_codes:
+                    duplicates_skipped += 1
+                    log_line(f"[Seed] {key} batch[{i}]: Skipped duplicate topology")
+                    # Try fallback to get a unique topology
+                    max_fallback_attempts = 10
+                    for _ in range(max_fallback_attempts):
+                        fallback_topo = canonicalize_topology(fallback_fn())
+                        if fallback_topo not in seen_codes:
+                            topo = fallback_topo
+                            tokens = 0
+                            break
+                    else:
+                        # If all fallbacks are duplicates, skip this seed
+                        log_line(f"[Seed] {key} batch[{i}]: All fallbacks were duplicates, skipping")
+                        continue
+                
+                seen_codes.add(topo)
                 indiv = Individual(code=topo, lineage=key)
                 indiv.tokens_from_llm += tokens
                 seeds.append(indiv)
-                log_line(f"[Seed] {key} batch[{i}]: got topo='{topo[:50]}' tokens={tokens}")
+                log_line(f"[Seed] {key} batch[{i}]: got topo='{topo}' tokens={tokens}")
+            
+            if duplicates_skipped > 0:
+                log_line(f"[Seed] {key}: Skipped {duplicates_skipped} duplicate(s) from batch")
         except Exception as e:
             log_line(f"[Seed] ERROR in batch for {key}: {e}, falling back to sequential")
             # Fallback to sequential if batch fails
             for i in range(target):
-                prompt = template.format(agent_pool_description=agent_pool_desc)
-                topo, tokens = llm.generate_topology(prompt)
-                if topo is None:
-                    topo = fallback_fn()
-                    tokens = 0
-                topo = filter_agents_to_pool(canonicalize_topology(topo))
-                if not topo:
-                    topo = fallback_fn()
-                indiv = Individual(code=topo, lineage=key)
-                indiv.tokens_from_llm += tokens
-                seeds.append(indiv)
+                max_attempts = 10
+                attempts = 0
+                while attempts < max_attempts:
+                    prompt = template.format(agent_pool_description=agent_pool_desc)
+                    topo, tokens = llm.generate_topology(prompt)
+                    if topo is None:
+                        topo = fallback_fn()
+                        tokens = 0
+                    topo = filter_agents_to_pool(canonicalize_topology(topo))
+                    if not topo:
+                        topo = fallback_fn()
+                    
+                    if topo not in seen_codes:
+                        seen_codes.add(topo)
+                        indiv = Individual(code=topo, lineage=key)
+                        indiv.tokens_from_llm += tokens
+                        seeds.append(indiv)
+                        break
+                    attempts += 1
+                else:
+                    log_line(f"[Seed] {key} seq[{i}]: Could not generate unique topology after {max_attempts} attempts")
         
         log_line(f"[Seed] {key} completed: {len([s for s in seeds if s.lineage == key])} seeds")
     
-    # Fill remaining with random
-    while len(seeds) < POPULATION_SIZE:
-        topo = random_chain()
-        seeds.append(Individual(code=topo, lineage="seed_random"))
+    # Fill remaining with random (with duplicate checking)
+    max_random_attempts = (POPULATION_SIZE - len(seeds)) * 10
+    random_attempts = 0
+    while len(seeds) < POPULATION_SIZE and random_attempts < max_random_attempts:
+        random_attempts += 1
+        topo = canonicalize_topology(random_chain())
+        if topo not in seen_codes:
+            seen_codes.add(topo)
+            seeds.append(Individual(code=topo, lineage="seed_random"))
+    
+    if len(seeds) < POPULATION_SIZE:
+        log_line(f"[Seed] WARNING: Only generated {len(seeds)} unique seeds (target: {POPULATION_SIZE})")
+    else:
+        log_line(f"[Seed] Successfully generated {len(seeds)} unique seeds")
     log_line(f"[Seed] Total seeds: {len(seeds)}")
     return seeds
 
@@ -647,9 +764,10 @@ def adaptive_crossover(base: Individual, donor: Individual, llm: LLMController, 
 
 def update_momentum(ind: Individual):
     new_direction = ind.direction
-    if ind.cost > MAX_COST_LIMIT:
+    # Only check cost limits if they are set (not None)
+    if MAX_COST_LIMIT is not None and ind.cost > MAX_COST_LIMIT:
         new_direction = "COMPRESS"
-    elif ind.cost < MIN_COST_LIMIT:
+    elif MIN_COST_LIMIT is not None and ind.cost < MIN_COST_LIMIT:
         new_direction = "EXPAND"
     elif ind.patience >= PATIENCE_LIMIT:
         new_direction = "COMPRESS" if ind.direction == "EXPAND" else "EXPAND"
@@ -666,9 +784,9 @@ def update_momentum(ind: Individual):
 def assign_nsga_metrics(pop: List[Individual]):
     if not pop:
         return
-    # Use node count instead of token cost for multi-objective optimization
-    # Objective 1: minimize node count, Objective 2: maximize pass@k (so negate score)
-    objs = np.array([[len(topology_to_linear_roles(ind.code)), -1 * ind.score] for ind in pop])
+    # Use token cost for multi-objective optimization
+    # Objective 1: minimize token cost, Objective 2: maximize pass@k (so negate score)
+    objs = np.array([[ind.cost, -1 * ind.score] for ind in pop])
     fronts = non_dominated_sort(objs)
     for rank, front in enumerate(fronts, start=1):
         dist = crowding_distance(objs, front)
@@ -688,9 +806,95 @@ def tournament_select(pop: List[Individual]) -> Individual:
     return best
 
 
-def evaluate_population(pop: List[Individual], dataset: BaseDataset, fast: bool = False, server_url: str = "http://localhost:8000") -> None:
-    log_line(f"[Eval] Starting evaluation: pop_size={len(pop)} fast={fast} num_problems={NUM_EVAL_PROBLEMS if not fast else 'N/A'}")
-    workflows = [topology_to_block_workflow(ind.code, TASK_NAME) for ind in pop]
+def select_buffer(candidates: List[Individual], buffer_size: int, fronts, population: List[Individual]) -> List[Individual]:
+    """
+    Select buffer (probation) candidates from the population.
+    Buffer candidates are individuals that were survivors in previous generations
+    but fell out of the top N in the current generation.
+    
+    Buffer priority:
+    1. Higher Front level (Front 0 > Front 1 > Front 2 > ...) - 낮은 Front 번호가 우선
+    2. Higher generation_age (veterans who survived longer)
+    3. Higher fitness (score/pass_at_k)
+    
+    Args:
+        candidates: List of individuals that didn't make it to survivors
+        buffer_size: Maximum number of buffer candidates to select
+        fronts: List of fronts from NSGA-II sorting (fronts[0] = Front 0, fronts[1] = Front 1, ...)
+        population: Full population list (to map indices)
+    
+    Returns:
+        List of buffer candidates
+    """
+    buffer_list = []
+    
+    # Build a mapping from individual object to its Front level
+    # Front 0 = level 0, Front 1 = level 1, etc.
+    individual_to_front_level = {}
+    for front_level, front_indices in enumerate(fronts):
+        for idx in front_indices:
+            # Use object id to map individuals to their front level
+            individual_to_front_level[id(population[idx])] = front_level
+    
+    # Sort candidates by:
+    # 1. Front level (lower is better, Front 0 > Front 1 > Front 2)
+    #    Use negative because we want lower front numbers first (Front 0 before Front 1)
+    # 2. generation_age (higher is better - veterans who survived longer)
+    # 3. fitness score (higher is better)
+    sorted_candidates = sorted(
+        candidates,
+        key=lambda x: (
+            -individual_to_front_level.get(id(x), 999),  # Negative: Front 0 (0) > Front 1 (1) > Front 2 (2)
+            x.generation_age,
+            x.score
+        ),
+        reverse=True
+    )
+    
+    for agent in sorted_candidates:
+        if len(buffer_list) >= buffer_size:
+            break
+        
+        # IMPORTANT: Exclude individuals that were already in buffer before
+        # Buffer purpose: give ONE chance to veterans who fell out of survivors
+        # If they fail again, they should be removed, not given another buffer chance
+        # Select individuals that have generation_age > 0 (were survivors before)
+        # This ensures only veterans (not newborn offspring) get buffer protection
+        # Buffer purpose: protect veterans from being eliminated by potentially lucky new offspring
+        if agent.generation_age > 0 and not agent.was_in_buffer:
+            buffer_list.append(agent)
+            agent.was_in_buffer = True  # Mark as having been in buffer
+    
+    return buffer_list
+
+
+def evaluate_population(pop: List[Individual], dataset: BaseDataset, fast: bool = False, server_url: str = "http://localhost:8001", max_eval_iter: int = 4, is_initial: bool = False, evaluate_newborns: bool = False, num_problems: int = None) -> None:
+    # Filter individuals that haven't exceeded max_eval_iter
+    # IMPORTANT: When evaluate_newborns=True, evaluate all individuals (both newborns and existing) with eval_count < max_eval_iter
+    # This allows new children and existing individuals to be evaluated together in the same batch
+    # Exception: For initial population, evaluate all individuals regardless of generation_age
+    if is_initial or evaluate_newborns:
+        # Evaluate all individuals that haven't reached max_eval_iter (both newborns and existing)
+        eval_candidates = [ind for ind in pop if ind.eval_count < max_eval_iter]
+    else:
+        # Legacy mode: Only re-evaluate individuals that have lived at least 1 generation
+        eval_candidates = [ind for ind in pop if ind.generation_age > 0 and ind.eval_count < max_eval_iter]
+    
+    if len(eval_candidates) == 0:
+        log_line(f"[Eval] All individuals have reached max_eval_iter ({max_eval_iter}). Skipping evaluation.")
+        return
+    
+    if len(eval_candidates) < len(pop):
+        log_line(f"[Eval] Evaluating {len(eval_candidates)} individuals (out of {len(pop)} total, {len(pop) - len(eval_candidates)} skipped due to max_eval_iter)")
+    
+    # Always use the same number of problems for evaluation (no phase-based increase)
+    if num_problems is None:
+        num_problems_this_eval = NUM_EVAL_PROBLEMS
+    else:
+        num_problems_this_eval = num_problems
+    
+    log_line(f"[Eval] Starting evaluation: pop_size={len(eval_candidates)} fast={fast} num_problems={num_problems_this_eval if not fast else 'N/A'}")
+    workflows = [topology_to_block_workflow(ind.code, TASK_NAME) for ind in eval_candidates]
     if fast:
         log_line("[Eval] Using fast (random) evaluation")
         results = [{"pass_at_k": random.random(), "token": random.uniform(1500, 6000)} for _ in workflows]
@@ -698,7 +902,7 @@ def evaluate_population(pop: List[Individual], dataset: BaseDataset, fast: bool 
         # Use evaluation server (same as ga.py)
         log_line(f"[Eval] Using evaluation server: {len(workflows)} workflows × {NUM_EVAL_PROBLEMS} problems (batch_size=60)")
         try:
-            from src.evaluation_client import EvaluationClient, BlockConfig
+            from src.client import EvaluationClient, BlockConfig
             
             async def _evaluate_batch():
                 client = EvaluationClient(server_url)
@@ -728,7 +932,7 @@ def evaluate_population(pop: List[Individual], dataset: BaseDataset, fast: bool 
                     respond = await client.evaluate_batch_async(
                         workflows=batch_blocks,
                         task_name=TASK_NAME,
-                        num_problems=NUM_EVAL_PROBLEMS,
+                        num_problems=num_problems_this_eval,
                         use_extractor=False,
                         seed=EVAL_SEED,
                         think=False,
@@ -755,14 +959,16 @@ def evaluate_population(pop: List[Individual], dataset: BaseDataset, fast: bool 
             for i, wf in enumerate(workflows):
                 if (i + 1) % 10 == 0:
                     log_line(f"[Eval] Progress: {i+1}/{len(workflows)} workflows evaluated")
-                pass_at_1 = quick_evaluate(workflow=wf, dataset=dataset, num_problems=NUM_EVAL_PROBLEMS, seed=EVAL_SEED)
+                pass_at_1 = quick_evaluate(workflow=wf, dataset=dataset, num_problems=num_problems_this_eval, seed=EVAL_SEED)
                 token_cost = getattr(wf, "total_tokens", 0) or random.uniform(2000, 7000)
                 results.append({"pass_at_k": pass_at_1, "token": token_cost})
 
-    for ind, res in zip(pop, results):
-        ind.update_fitness(res["pass_at_k"], res["token"])
+    for ind, res in zip(eval_candidates, results):
+        # Update fitness with weighted average (pass num_problems for weighted average calculation)
+        ind.update_fitness(res["pass_at_k"], res["token"], num_problems=num_problems_this_eval)
+        ind.eval_count += 1  # Increment eval_count
         update_momentum(ind)
-    log_line(f"[Eval] Fitness updated for all individuals")
+    log_line(f"[Eval] Fitness updated for {len(eval_candidates)} individuals (num_problems={num_problems_this_eval}, weighted average applied)")
 
 
 def _shim_population_for_logging(population: List[Individual]):
@@ -779,40 +985,19 @@ def _shim_population_for_logging(population: List[Individual]):
                 "pass_at_k": ind.score,
                 "token": ind.cost,
             },
+            "_id": ind.code,  # Use code as unique identifier for plot_pareto matching
         })
     return shim
 
 
-def _plot_pareto_llm(population: List[Individual], file_name: str, save_dir: str = None):
-    """
-    Local copy of Pareto plotting to save under ga_llm-specific dir.
-    X-axis: number of nodes in workflow (instead of token cost)
-    Y-axis: pass@k score
-    """
-    import matplotlib.pyplot as plt
-    save_dir = save_dir or GRAPH_DIR
-    os.makedirs(save_dir, exist_ok=True)
-
-    pass_at_k_array = np.array([ind.score for ind in population])
-    # Calculate node count for each individual
-    node_counts = np.array([len(topology_to_linear_roles(ind.code)) for ind in population])
-
-    plt.figure(figsize=(7, 5))
-    plt.scatter(node_counts, pass_at_k_array, c="red", s=40)
-    plt.xlabel("Objective 1 (Number of Nodes)")
-    plt.ylabel("Objective 2 (pass@k)")
-    plt.title("Pareto Front (GA LLM)")
-    plt.grid(True)
-
-    save_path = os.path.join(save_dir, f"{file_name}.png")
-    plt.savefig(save_path, dpi=300, bbox_inches="tight")
-    log_line(f"[Saved] Pareto front saved to: {save_path}")
-    plt.close()
 
 
 def evolve(args, run_id: str = None):
     llm = LLMController(model=args.model, temperature=0.35) if USE_LLM else None
     dataset = get_dataset()
+    
+    # Initialize Pareto front archive to store removed Front 0 individuals
+    pareto_front_archive: List[Individual] = []
     
     # Setup run-specific directories
     if run_id:
@@ -824,33 +1009,245 @@ def evolve(args, run_id: str = None):
         run_checkpoint_dir = CHECKPOINT_DIR
         run_graph_dir = GRAPH_DIR
 
+    seed_start = time.time()
+    log_line(f"[Init] Starting population seeding...")
     population = stratified_seed_population(llm)
-    evaluate_population(population, dataset, fast=args.fast)
-    log_line(f"[Init] seeded={len(population)} fast={args.fast} use_llm={USE_LLM}")
+    seed_time = time.time() - seed_start
+    log_line(f"[Init] Seeding complete | elapsed={seed_time:.2f}s")
+    
+    eval_start = time.time()
+    log_line(f"[Init] Evaluating initial population ({len(population)} individuals)...")
+    evaluate_population(population, dataset, fast=args.fast, server_url=args.server_url, max_eval_iter=getattr(args, 'max_eval_iter', 4), is_initial=True)
+    eval_time = time.time() - eval_start
+    log_line(f"[Init] Initial evaluation complete | elapsed={eval_time:.2f}s")
+    log_line(f"[Init] seeded={len(population)} fast={args.fast} use_llm={USE_LLM} elite_ratio={args.elite_ratio} buffer_size={getattr(args, 'buffer_size', 10)} max_eval_iter={getattr(args, 'max_eval_iter', 4)}")
+    
+    # Log initial statistics
+    assign_nsga_metrics(population)  # Assign NSGA metrics for initial population
+    
+    # Dynamically set cost limits based on initial population token cost distribution
+    # This allows the limits to adapt to the actual problem scale
+    global MIN_COST_LIMIT, MAX_COST_LIMIT
+    if population:
+        costs = [ind.cost for ind in population]
+        cost_min = min(costs)
+        cost_max = max(costs)
+        cost_median = np.median(costs)
+        cost_q25 = np.percentile(costs, 25)
+        cost_q75 = np.percentile(costs, 75)
+        
+        # Set MIN_COST_LIMIT to 25th percentile (or 0.8 * min if that's too low)
+        # This allows expansion when cost is below the lower quartile
+        MIN_COST_LIMIT = max(cost_q25 * 0.8, cost_min * 0.7)
+        
+        # Set MAX_COST_LIMIT to 75th percentile * 1.5 (or 1.3 * max if that's higher)
+        # This allows compression when cost exceeds the upper quartile significantly
+        MAX_COST_LIMIT = max(cost_q75 * 1.5, cost_max * 1.3)
+        
+        log_line(f"[Init] Dynamic cost limits set: MIN={MIN_COST_LIMIT:.0f} MAX={MAX_COST_LIMIT:.0f} "
+                 f"(cost range: {cost_min:.0f}-{cost_max:.0f}, median={cost_median:.0f}, "
+                 f"Q25={cost_q25:.0f}, Q75={cost_q75:.0f})")
+    else:
+        # Fallback to defaults if population is empty
+        MIN_COST_LIMIT = 1200
+        MAX_COST_LIMIT = 12000
+        log_line(f"[Init] Using default cost limits: MIN={MIN_COST_LIMIT} MAX={MAX_COST_LIMIT}")
+    
+    # Calculate actual Pareto front (first front) for plotting
+    # Use cost (token) and score (pass@1) for plotting, matching plot_pareto expectations
+    objs_plot = np.array([[ind.cost, -1 * ind.score] for ind in population])
+    fronts_plot = non_dominated_sort(objs_plot)
+    pareto_front_indices_gen0 = fronts_plot[0] if fronts_plot else []
+    pareto_front_individuals_gen0 = [population[i] for i in pareto_front_indices_gen0]
+    
+    # Select survivors for generation 0 (same logic as later generations)
+    elites_count_gen0 = max(1, int(args.elite_ratio * POPULATION_SIZE))
+    sorted_pop_gen0 = sorted(population, key=lambda i: (i.rank, -i.distance))
+    
+    # Prioritize Front 0 (rank 1) individuals
+    front_0_individuals_gen0 = [ind for ind in sorted_pop_gen0 if ind.rank == 1]
+    remaining_slots_gen0 = elites_count_gen0 - len(front_0_individuals_gen0)
+    
+    if remaining_slots_gen0 > 0:
+        # Fill remaining slots from other ranks
+        other_rank_individuals_gen0 = []
+        slots_remaining = remaining_slots_gen0
+        for rank in range(2, max([ind.rank for ind in population], default=1) + 1):
+            if slots_remaining <= 0:
+                break
+            rank_individuals = [ind for ind in sorted_pop_gen0 if ind.rank == rank]
+            if not rank_individuals:
+                continue
+            num_from_this_rank = min(slots_remaining, len(rank_individuals))
+            other_rank_individuals_gen0.extend(rank_individuals[:num_from_this_rank])
+            slots_remaining -= num_from_this_rank
+        survivors_gen0 = front_0_individuals_gen0 + other_rank_individuals_gen0
+    else:
+        # Front 0 has more individuals than elites_count, use crowding distance to select top ones
+        if len(front_0_individuals_gen0) > elites_count_gen0:
+            front_0_objs_gen0 = np.array([[ind.cost, -1 * ind.score] for ind in front_0_individuals_gen0])
+            front_0_indices_gen0 = list(range(len(front_0_individuals_gen0)))
+            front_0_dist_gen0 = crowding_distance(front_0_objs_gen0, front_0_indices_gen0)
+            front_0_sorted_by_dist_gen0 = sorted(range(len(front_0_individuals_gen0)), key=lambda i: -front_0_dist_gen0[i])
+            survivors_gen0 = [front_0_individuals_gen0[i] for i in front_0_sorted_by_dist_gen0[:elites_count_gen0]]
+        else:
+            survivors_gen0 = front_0_individuals_gen0
+    
+    buffer_list_gen0 = []  # No buffer for generation 0
+    
+    best = max(population, key=lambda i: i.score)
+    avg_score = sum(i.score for i in population) / len(population)
+    llm_calls = llm.call_count if llm else 0
+    
+    log_line(f"[Init] Initial Statistics:")
+    log_line(f"[Init]   Best: score={best.score:.4f} pass@1={best.score:.4f} cost={best.cost:.1f} rank={best.rank} dir={best.direction} lineage={best.lineage}")
+    log_line(f"[Init]   Best topology: {best.code}")
+    log_line(f"[Init]   Avg score: {avg_score:.4f}")
+    log_line(f"[Init]   LLM calls: {llm_calls}")
+    
+    # Log top 5 individuals
+    top5 = sorted(population, key=lambda i: (i.rank, -i.score))[:5]
+    log_line(f"[Init]   Top 5:")
+    for idx, ind in enumerate(top5, 1):
+        log_line(f"[Init]     [{idx}] rank={ind.rank} score={ind.score:.4f} pass@1={ind.score:.4f} cost={ind.cost:.1f} lineage={ind.lineage}")
+    
+    # Save initial checkpoint and plot (generation 0)
+    log_line(f"[Init] Saving initial checkpoint and plot...")
+    shim_pop = _shim_population_for_logging(population)
+    survivors_shim_gen0 = _shim_population_for_logging(survivors_gen0)
+    buffer_shim_gen0 = _shim_population_for_logging(buffer_list_gen0)
+    pareto_front_shim_gen0 = _shim_population_for_logging(pareto_front_individuals_gen0)
+    checkpoint_name = f"{run_id}_gen0" if run_id else f"evolite_gen0"
+    save_checkpoint_csv(shim_pop, checkpoint_name, save_dir=run_checkpoint_dir)
+    log_line(f"[Init]   Checkpoint saved: {os.path.join(run_checkpoint_dir, f'population_{checkpoint_name}.csv')}")
+    try:
+        plot_name = f"{run_id}_gen0" if run_id else f"evolite_gen0"
+        # Use actual survivors, buffer, and Pareto front for plotting (matching ga.py)
+        plot_pareto(shim_pop, plot_name, save_dir=run_graph_dir, survivors=survivors_shim_gen0, buffer_list=buffer_shim_gen0, pareto_front=pareto_front_shim_gen0)
+        log_line(f"[Init]   Plot saved: {os.path.join(run_graph_dir, f'{plot_name}.png')}")
+    except Exception as exc:
+        log_line(f"[Init]   [WARN] Pareto plotting skipped: {exc}")
 
     seen_codes = {ind.code for ind in population}
 
     for gen in range(MAX_GENERATIONS):
+        gen_start_time = datetime.now()
+        gen_start_str = gen_start_time.strftime("%Y-%m-%d %H:%M:%S")
+        gen_start_ts = time.time()
         log_line(f"[Gen {gen+1:02d}] ========== START ==========")
+        log_line(f"[Gen {gen+1:02d}] Start time: {gen_start_str}")
+        
+        step1_start = time.time()
         log_line(f"[Gen {gen+1:02d}] Step 1: Assigning NSGA metrics...")
         assign_nsga_metrics(population)
         
-        # Select elites by fixed ratio (20% - reduced for more diversity)
-        elites_count = max(1, int(0.2 * POPULATION_SIZE))
+        # Calculate actual Pareto front (first front) for plotting
+        # Use cost (token) and score (pass@1) for plotting, matching plot_pareto expectations
+        objs_plot = np.array([[ind.cost, -1 * ind.score] for ind in population])
+        fronts_plot = non_dominated_sort(objs_plot)
+        pareto_front_indices = fronts_plot[0] if fronts_plot else []
+        pareto_front_individuals = [population[i] for i in pareto_front_indices]
+        
+        step1_time = time.time() - step1_start
+        log_line(f"[Gen {gen+1:02d}] Step 1 complete | elapsed={step1_time:.2f}s")
+        
+        # Select elites by ratio (configurable via CLI)
+        step2_start = time.time()
+        elites_count = max(1, int(args.elite_ratio * POPULATION_SIZE))
         sorted_pop = sorted(population, key=lambda i: (i.rank, -i.distance))
-        new_pop: List[Individual] = sorted_pop[:elites_count]
-        log_line(f"[Gen {gen+1:02d}] Step 2: Selected {elites_count} elites (20% of population)")
+        
+        # IMPORTANT: Ensure all Front 0 (rank=1, Pareto front) individuals are selected first
+        # Then fill remaining slots from other ranks
+        front_0_individuals = [ind for ind in sorted_pop if ind.rank == 1]
+        remaining_slots = elites_count - len(front_0_individuals)
+        
+        if remaining_slots > 0:
+            # Add individuals from other ranks (excluding rank=1)
+            # IMPORTANT: Select from ranks in order (rank 2 → rank 3 → rank 4 → ...)
+            # Within each rank, use distance (crowding distance) order
+            other_rank_individuals = []
+            slots_remaining = remaining_slots
+            
+            # Get max rank to iterate through
+            max_rank = max((ind.rank for ind in sorted_pop), default=1)
+            
+            # Iterate through ranks in order (skip rank 1 which is Front 0)
+            for rank in range(2, max_rank + 1):
+                if slots_remaining <= 0:
+                    break
+                
+                # Get individuals in this rank, sorted by distance (higher is better)
+                rank_individuals = [ind for ind in sorted_pop if ind.rank == rank]
+                rank_individuals_sorted = sorted(rank_individuals, key=lambda i: -i.distance)
+                
+                # Select top individuals from this rank
+                num_from_this_rank = min(slots_remaining, len(rank_individuals_sorted))
+                other_rank_individuals.extend(rank_individuals_sorted[:num_from_this_rank])
+                slots_remaining -= num_from_this_rank
+            
+            survivors: List[Individual] = front_0_individuals + other_rank_individuals
+        else:
+            # Front 0 has more individuals than elites_count, use crowding distance to select top ones
+            if len(front_0_individuals) > elites_count:
+                # Re-sort Front 0 by crowding distance and take top elites_count
+                front_0_objs = np.array([[ind.cost, -1 * ind.score] for ind in front_0_individuals])
+                front_0_indices = list(range(len(front_0_individuals)))
+                front_0_dist = crowding_distance(front_0_objs, front_0_indices)
+                front_0_sorted_by_dist = sorted(range(len(front_0_individuals)), key=lambda i: -front_0_dist[i])
+                survivors: List[Individual] = [front_0_individuals[i] for i in front_0_sorted_by_dist[:elites_count]]
+                
+                # Archive removed Front 0 individuals (they were in Pareto front but removed due to size limit)
+                removed_front_0 = [front_0_individuals[i] for i in front_0_sorted_by_dist[elites_count:]]
+                for ind in removed_front_0:
+                    # Deep copy to preserve state at this generation
+                    archived_individual = deepcopy(ind)
+                    pareto_front_archive.append(archived_individual)
+                
+                if len(removed_front_0) > 0:
+                    log_line(f"[Gen {gen+1:02d}] Archived {len(removed_front_0)} Front 0 individuals (Pareto front size limit)")
+            else:
+                survivors: List[Individual] = front_0_individuals
+        
+        # Increment generation_age for survivors
+        # IMPORTANT: Reset was_in_buffer flag for survivors - they earned their place back
+        for survivor in survivors:
+            survivor.generation_age += 1
+            survivor.was_in_buffer = False  # Reset buffer flag - they're survivors now
+        
+        log_line(f"[Gen {gen+1:02d}] Step 2: Selected {elites_count} survivors ({args.elite_ratio*100:.1f}% of population)")
+        
+        # Select Buffer (Probation) Candidates
+        # IMPORTANT: Buffer purpose: Give probation to veterans (generation_age > 0) who fell out of survivors
+        # Priority: Higher Front level (Front 0 > Front 1 > ...) > Higher generation_age > Higher fitness
+        # This protects veterans from being eliminated by potentially lucky new offspring
+        
+        # First, identify all individuals that were NOT selected as survivors
+        survivor_ids = set(id(s) for s in survivors)
+        non_survivors = [ind for ind in population if id(ind) not in survivor_ids]
+        
+        # Select buffer from non_survivors, prioritizing by Front level, generation_age, and fitness
+        buffer_size = getattr(args, 'buffer_size', 10)
+        buffer_list = select_buffer(non_survivors, buffer_size, fronts_plot, population)
+        log_line(f"[Gen {gen+1:02d}] Step 2b: Selected {len(buffer_list)} buffer candidates")
+        
+        step2_time = time.time() - step2_start
+        log_line(f"[Gen {gen+1:02d}] Step 2 complete | elapsed={step2_time:.2f}s")
 
-        # Create set of existing codes in current population and new_pop for efficient duplicate checking
-        existing_codes = {ind.code for ind in population} | {ind.code for ind in new_pop}
+        # Create parent pool: survivors + buffer (both can reproduce)
+        parent_pool = survivors + buffer_list
+        
+        # Create set of existing codes in current population for efficient duplicate checking
+        existing_codes = {ind.code for ind in population} | {ind.code for ind in survivors} | {ind.code for ind in buffer_list}
         log_line(f"[Gen {gen+1:02d}] Step 2a: Duplicate check set size: seen_codes={len(seen_codes)}, existing_codes={len(existing_codes)}")
 
+        step3_start = time.time()
+        new_pop: List[Individual] = survivors.copy()  # Start with survivors
         log_line(f"[Gen {gen+1:02d}] Step 3: Generating children (target={POPULATION_SIZE - elites_count})...")
         children_generated = 0
         children_skipped_duplicate = 0
         while len(new_pop) < POPULATION_SIZE:
-            parent_a = tournament_select(population)
-            parent_b = tournament_select(population)
+            parent_a = tournament_select(parent_pool)
+            parent_b = tournament_select(parent_pool)
 
             # Decide operator
             use_mutation = random.random() < MUTATION_RATE
@@ -878,14 +1275,44 @@ def evolve(args, run_id: str = None):
             if children_generated % 10 == 0:
                 log_line(f"[Gen {gen+1:02d}] Step 3 progress: {children_generated} children, {children_skipped_duplicate} duplicates skipped")
 
-        log_line(f"[Gen {gen+1:02d}] Step 3 complete: {children_generated} children generated, {children_skipped_duplicate} duplicates skipped")
-        log_line(f"[Gen {gen+1:02d}] Step 4: Evaluating {len(new_pop)-elites_count} new children...")
-        evaluate_population(new_pop[elites_count:], dataset, fast=args.fast)
-        for elite in new_pop[:elites_count]:
+        step3_time = time.time() - step3_start
+        log_line(f"[Gen {gen+1:02d}] Step 3 complete: {children_generated} children generated, {children_skipped_duplicate} duplicates skipped | elapsed={step3_time:.2f}s")
+        
+        step4_start = time.time()
+        # Evaluate new children AND existing individuals that haven't reached max_eval_iter
+        children = new_pop[elites_count:]
+        
+        # Collect all individuals that need evaluation:
+        # 1. New children (generation_age=0, eval_count=0)
+        # 2. Existing individuals (survivors + buffer) with eval_count < max_eval_iter
+        max_eval_iter = getattr(args, 'max_eval_iter', 4)
+        eval_candidates = []
+        
+        # Add new children
+        for child in children:
+            if child.eval_count < max_eval_iter:
+                eval_candidates.append(child)
+        
+        # Add existing individuals (survivors + buffer) that need re-evaluation
+        for ind in survivors + buffer_list:
+            if ind.eval_count < max_eval_iter:
+                eval_candidates.append(ind)
+        
+        log_line(f"[Gen {gen+1:02d}] Step 4: Evaluating {len(eval_candidates)} individuals ({len(children)} new children + {len(eval_candidates) - len(children)} existing individuals with eval_count < {max_eval_iter})...")
+        if len(eval_candidates) > 0:
+            evaluate_population(eval_candidates, dataset, fast=args.fast, server_url=args.server_url, max_eval_iter=max_eval_iter, evaluate_newborns=True)
+        
+        for elite in survivors:
             elite.patience += 1
             update_momentum(elite)
-        population = new_pop
+        
+        # Compose next generation: Survivors + Offspring + Buffer
+        population = survivors + children + buffer_list
+        log_line(f"[Gen {gen+1:02d}] Next generation pool: {len(survivors)} survivors + {len(children)} offspring + {len(buffer_list)} buffer = {len(population)} total")
+        step4_time = time.time() - step4_start
+        log_line(f"[Gen {gen+1:02d}] Step 4 complete | elapsed={step4_time:.2f}s")
 
+        step5_start = time.time()
         best = max(population, key=lambda i: i.score)
         avg_score = sum(i.score for i in population) / len(population)
         llm_calls = llm.call_count if llm else 0
@@ -902,9 +1329,12 @@ def evolve(args, run_id: str = None):
         log_line(f"[Gen {gen+1:02d}]   Top 5:")
         for idx, ind in enumerate(top5, 1):
             log_line(f"[Gen {gen+1:02d}]     [{idx}] rank={ind.rank} score={ind.score:.4f} cost={ind.cost:.1f} lineage={ind.lineage}")
-
+        step5_time = time.time() - step5_start
+        log_line(f"[Gen {gen+1:02d}] Step 5 complete | elapsed={step5_time:.2f}s")
+        
         # Save checkpoint and plot every generation (or every 5)
         save_every = 1  # Save every generation
+        step6_start = time.time()
         if (gen + 1) % save_every == 0:
             log_line(f"[Gen {gen+1:02d}] Step 6: Saving checkpoint and plot...")
             shim_pop = _shim_population_for_logging(population)
@@ -913,11 +1343,33 @@ def evolve(args, run_id: str = None):
             log_line(f"[Gen {gen+1:02d}]   Checkpoint saved: {os.path.join(run_checkpoint_dir, f'population_{checkpoint_name}.csv')}")
             try:
                 plot_name = f"{run_id}_gen{gen+1}" if run_id else f"evolite_gen{gen+1}"
-                _plot_pareto_llm(population, plot_name, save_dir=run_graph_dir)
+                # IMPORTANT: Re-compute pareto_front_individuals from the new population
+                # because population was reconstructed (survivors + children + buffer)
+                # and pareto_front_individuals may reference old population objects
+                # Re-calculate Pareto front from the new population
+                objs_plot_new = np.array([[ind.cost, -1 * ind.score] for ind in population])
+                fronts_plot_new = non_dominated_sort(objs_plot_new)
+                pareto_front_indices_new = fronts_plot_new[0] if fronts_plot_new else []
+                pareto_front_individuals_new = [population[i] for i in pareto_front_indices_new]
+                
+                # Convert survivors, buffer, and pareto front to shim format for plot_pareto
+                survivors_shim = _shim_population_for_logging(survivors)
+                buffer_shim = _shim_population_for_logging(buffer_list)
+                pareto_front_shim = _shim_population_for_logging(pareto_front_individuals_new)
+                # Use plot_pareto with actual Pareto front for line connection
+                plot_pareto(shim_pop, plot_name, save_dir=run_graph_dir, survivors=survivors_shim, buffer_list=buffer_shim, pareto_front=pareto_front_shim)
                 log_line(f"[Gen {gen+1:02d}]   Plot saved: {os.path.join(run_graph_dir, f'{plot_name}.png')}")
             except Exception as exc:
                 log_line(f"[Gen {gen+1:02d}]   [WARN] Pareto plotting skipped: {exc}")
+        step6_time = time.time() - step6_start
+        log_line(f"[Gen {gen+1:02d}] Step 6 complete | elapsed={step6_time:.2f}s")
         
+        # Log generation end time and elapsed time
+        gen_end_time = datetime.now()
+        gen_end_str = gen_end_time.strftime("%Y-%m-%d %H:%M:%S")
+        gen_elapsed = time.time() - gen_start_ts
+        log_line(f"[Gen {gen+1:02d}] End time: {gen_end_str}")
+        log_line(f"[Gen {gen+1:02d}] Total elapsed time: {gen_elapsed:.2f}s (Step1={step1_time:.2f}s Step2={step2_time:.2f}s Step3={step3_time:.2f}s Step4={step4_time:.2f}s Step5={step5_time:.2f}s Step6={step6_time:.2f}s)")
         log_line(f"[Gen {gen+1:02d}] ========== END ==========")
 
     assign_nsga_metrics(population)
@@ -934,11 +1386,111 @@ def evolve(args, run_id: str = None):
             log_line(f"[WARN] LLM close failed: {e}")
     
     population.sort(key=lambda i: (i.rank, -i.score))
-    return population
+    
+    # ========== FINALIZATION: Combine archive + final front and validate ==========
+    finalize_valid = getattr(args, 'finalize_valid', 100)
+    log_line(f"\n{'='*60}")
+    log_line("Finalization: Combining Pareto front archive with final generation")
+    log_line(f"{'='*60}")
+    
+    # Get final Pareto front from last generation (rank=1)
+    pareto_front_final = [ind for ind in population if ind.rank == 1]
+    
+    # Combine archive and final front
+    combined_candidates = pareto_front_archive + pareto_front_final
+    
+    log_line(f"Archive size: {len(pareto_front_archive)}")
+    log_line(f"Final front size: {len(pareto_front_final)}")
+    log_line(f"Combined candidates: {len(combined_candidates)}")
+    log_line(f"Validating top candidates with {finalize_valid} problems...")
+    
+    # Evaluate combined candidates with finalize_valid problems
+    if len(combined_candidates) > 0:
+        workflows_combined = [topology_to_block_workflow(ind.code, TASK_NAME) for ind in combined_candidates]
+        
+        if args.fast:
+            results = [{"pass_at_k": random.random(), "token": random.uniform(1500, 6000)} for _ in workflows_combined]
+        else:
+            from src.client import EvaluationClient, BlockConfig
+            async def _evaluate_final():
+                client = EvaluationClient(args.server_url)
+                all_results = []
+                batch_size = 60
+                
+                for start in range(0, len(workflows_combined), batch_size):
+                    batch = workflows_combined[start:start + batch_size]
+                    batch_blocks = []
+                    for wf in batch:
+                        blocks = []
+                        for block in wf.blocks:
+                            if isinstance(block, AgentBlock):
+                                blocks.append(BlockConfig(type="agent", role=block.role))
+                            elif isinstance(block, CompositeBlock):
+                                blocks.append(BlockConfig(
+                                    type="composite",
+                                    divider_role=block.divider_role,
+                                    synth_role=block.synth_role
+                                ))
+                        batch_blocks.append(blocks)
+                    
+                    respond = await client.evaluate_batch_async(
+                        workflows=batch_blocks,
+                        task_name=TASK_NAME,
+                        num_problems=finalize_valid,
+                        use_extractor=False,
+                        seed=EVAL_SEED,
+                        think=False,
+                    )
+                    all_results.extend(respond)
+                
+                await client.close()
+                return all_results
+            
+            eval_results = asyncio.run(_evaluate_final())
+            results = []
+            for eval_result in eval_results:
+                results.append({
+                    "pass_at_k": eval_result.pass_at_1,
+                    "token": eval_result.total_tokens
+                })
+        
+        # Update fitness with final validation results
+        for ind, res in zip(combined_candidates, results):
+            ind.update_fitness(res["pass_at_k"], res["token"], num_problems=finalize_valid)
+    
+    # Re-sort combined candidates using NSGA-II
+    objs_combined = np.array([[ind.cost, -1 * ind.score] for ind in combined_candidates])
+    fronts_combined = non_dominated_sort(objs_combined)
+    pareto_front_indices_combined = fronts_combined[0] if fronts_combined else []
+    final_pareto_front = [combined_candidates[i] for i in pareto_front_indices_combined]
+    
+    log_line(f"Final Pareto front size: {len(final_pareto_front)}")
+    if len(final_pareto_front) > 0:
+        log_line(f"Final Pareto front pass@k range: {min([ind.score for ind in final_pareto_front]):.4f} - {max([ind.score for ind in final_pareto_front]):.4f}")
+        log_line(f"Final Pareto front token range: {min([ind.cost for ind in final_pareto_front]):.0f} - {max([ind.cost for ind in final_pareto_front]):.0f}")
+    
+    # Save final Pareto front
+    final_shim = _shim_population_for_logging(final_pareto_front)
+    checkpoint_name = f"{run_id}_final" if run_id else "evolite_final"
+    save_checkpoint_csv(final_shim, checkpoint_name, save_dir=run_checkpoint_dir)
+    log_line(f"Final checkpoint saved: {os.path.join(run_checkpoint_dir, f'population_{checkpoint_name}.csv')}")
+    
+    try:
+        plot_name = f"{run_id}_final" if run_id else "evolite_final"
+        final_shim_survivors = _shim_population_for_logging(final_pareto_front)
+        plot_pareto(final_shim, plot_name, save_dir=run_graph_dir, survivors=final_shim_survivors, buffer_list=[], pareto_front=final_shim_survivors)
+        log_line(f"Final plot saved: {os.path.join(run_graph_dir, f'{plot_name}.png')}")
+    except Exception as exc:
+        log_line(f"[WARN] Final Pareto plotting skipped: {exc}")
+    
+    log_line(f"{'='*60}\n")
+    
+    return final_pareto_front
 
 
 def main():
     import argparse
+    global POPULATION_SIZE, MAX_GENERATIONS, NUM_EVAL_PROBLEMS, USE_LLM, run_log_path
 
     parser = argparse.ArgumentParser(description="EvoLite GA (LLM-driven topology evolution)")
     parser.add_argument("--task", type=str, default=TASK_NAME, help="Task name (default: MBPP)")
@@ -948,15 +1500,27 @@ def main():
     parser.add_argument("--run-id", type=str, required=False, help="Optional run id (default: UTC timestamp)")
     parser.add_argument("--no-llm", action="store_true", help="Disable LLM calls; use random mutation/crossover only")
     parser.add_argument("--smoke-llm", action="store_true", help="Run a single lightweight LLM topology call and exit")
+    parser.add_argument("--server-url", type=str, default="http://localhost:8001", help="Evaluation server URL")
+    parser.add_argument("--population-size", type=int, default=POPULATION_SIZE, help="The size of population")
+    parser.add_argument("--generation", type=int, default=MAX_GENERATIONS, help="The number of generations")
+    parser.add_argument("--num-problem", type=int, default=NUM_EVAL_PROBLEMS, help="The number of problems to evaluate")
+    parser.add_argument("--elite-ratio", type=float, default=0.2, help="Elitism ratio (default: 0.2 = 20%%)")
+    parser.add_argument("--buffer-size", type=int, default=10, help="The size of buffer (probation) pool")
+    parser.add_argument("--max-eval-iter", type=int, default=4, help="Maximum evaluation iterations per individual")
+    parser.add_argument("--finalize-valid", type=int, default=100, help="Number of problems for final validation of Pareto front")
     args = parser.parse_args()
 
     # Setup run log path
     run_id = args.run_id or datetime.utcnow().strftime("%Y%m%dT%H%M%S")
-    global run_log_path
     run_log_path = os.path.join(RUN_LOG_DIR, f"{run_id}.log")
-    global USE_LLM
     USE_LLM = not args.no_llm
-    log_line(f"[Run] ga_llm start run_id={run_id} use_llm={USE_LLM}")
+    
+    # Override constants with command-line arguments
+    POPULATION_SIZE = args.population_size
+    MAX_GENERATIONS = args.generation
+    NUM_EVAL_PROBLEMS = args.num_problem
+    
+    log_line(f"[Run] ga_llm start run_id={run_id} use_llm={USE_LLM} pop_size={POPULATION_SIZE} generations={MAX_GENERATIONS} num_problems={NUM_EVAL_PROBLEMS}")
 
     # Optional LLM smoke test (single call) before full GA
     if args.smoke_llm:

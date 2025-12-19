@@ -1,0 +1,24 @@
+workflow_roles,pass_at_k,tokens
+Input/State Inspector,0.05,6389.0
+Solution Planner -> Dynamic Programming Specialist,0.8,12502.5
+Solution Refiner,0.15,7939.0
+Counterexample Generator -> Data & Arrays Specialist,0.7375,11547.75
+Solution Refiner,0.1125,7323.25
+Algorithm Strategist,0.075,6540.25
+Progress Summarizer -> Algorithm Strategist,0.725,12214.0
+Progress Summarizer -> Solution Drafter,0.8,12047.0
+Solution Planner,0.025,6499.25
+Counterexample Generator,0.0875,7551.75
+Counterexample Generator -> Data & Arrays Specialist -> Solution Planner -> Dynamic Programming Specialist,0.75,25195
+Solution Planner -> Style & Hygiene Enforcer -> Dynamic Programming Specialist,0.75,19443
+Solution Refiner -> Algorithm Strategist,0.75,14700
+Solution Refiner -> Solution Planner,0.75,12356
+Feedback Integrator -> Solution Refiner,0.65,12467
+Strategy Selector -> Solution Planner,0.75,14479
+Algorithm Strategist -> Final Presenter -> Counterexample Generator,0.7,17314
+Consistency Checker -> Counterexample Generator,0.75,13303
+Solution Planner -> Data & Arrays Specialist -> Dynamic Programming Specialist,0.85,21556
+Counterexample Generator -> Data & Arrays Specialist -> Solution Planner,0.75,17703
+Algorithm Strategist -> Counterexample Generator,0.625,11961.5
+Counterexample Generator -> Data & Arrays Specialist,0.7625,12665.5
+Solution Planner -> Solution Refiner,0.5666666666666667,13153.333333333334

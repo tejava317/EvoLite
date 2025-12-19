@@ -1,0 +1,26 @@
+workflow_roles,pass_at_k,tokens
+Logic Implementer,0.05,6389.0
+Regression Sentinel -> Solution Planner,0.775,12034.0
+Counterexample Generator,0.06666666666666667,7383.0
+Counterexample Generator -> Data & Arrays Specialist,0.75,11218.0
+Algorithm Strategist,0.075,6540.25
+Progress Summarizer -> Solution Drafter,0.8,12047.0
+Solution Planner,0.016666666666666666,6542.333333333333
+Algorithm Strategist -> Style & Hygiene Enforcer,0.725,12252.5
+Solution Planner -> Solution Drafter,0.75,13543.0
+Quality Auditor,0.0,6710.5
+Counterexample Generator -> Algorithm Strategist -> Style & Hygiene Enforcer,0.7,19556
+Algorithm Strategist -> Style & Hygiene Enforcer -> Solution Planner -> Solution Drafter,0.65,24815
+Algorithm Strategist -> Style & Hygiene Enforcer -> Regression Sentinel -> Solution Planner,0.8,27600
+Bug Hunter -> Quality Auditor,0.7,13107
+Solution Ranker -> Regression Sentinel -> Solution Planner,0.75,19684
+Performance Optimizer -> Solution Planner,0.7,13241
+Strategy Selector -> Approach Evaluator,0.55,14412
+Output Specifier -> Algorithm Strategist,0.6,12764
+Regression Sentinel -> Solution Planner -> Consensus Builder,0.8,17041
+Counterexample Generator -> Solution Planner,0.8,11855
+Solution Drafter -> Solution Reviewer,0.7875,13364.5
+Explanation Author -> Progress Summarizer,0.7,12334.0
+Solution Planner -> Quality Auditor,0.75,12337.0
+Algorithm Strategist -> Counterexample Generator,0.625,11961.5
+Quality Auditor -> Algorithm Strategist,0.725,12826.75

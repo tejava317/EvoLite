@@ -1,0 +1,24 @@
+workflow_roles,pass_at_k,tokens
+Summary Author,0.05,6389.0
+Quality Auditor -> Algorithm Strategist,0.7333333333333333,13179.666666666666
+Counterexample Generator,0.075,7772.5
+Progress Summarizer -> Solution Drafter,0.8,12047.0
+Solution Drafter -> Solution Reviewer,0.7875,13364.5
+Solution Planner -> Quality Auditor,0.75,12487.666666666666
+Solution Planner,0.0,6530.0
+Algorithm Strategist -> Counterexample Generator,0.5833333333333334,11919.0
+Algorithm Strategist,0.06666666666666667,6708.666666666667
+Explanation Author -> Progress Summarizer,0.7,12334.0
+Algorithm Strategist -> Style & Hygiene Enforcer,0.6,11177
+Counterexample Generator -> Data & Arrays Specialist,0.75,11137
+Solution Planner -> Solution Drafter,0.8,13912
+Algorithm Strategist -> Counterexample Generator,0.5,13260
+Progress Summarizer -> Counterexample Generator,0.7,12732
+Bug Hunter -> Robustness Engineer,0.65,14036
+Explanation Author -> Progress Summarizer -> Quality Auditor,0.8,19154
+Regression Sentinel -> Solution Planner,0.8,11684
+Explanation Author -> Progress Summarizer -> Solution Reviewer,0.75,19362
+Solution Planner -> Solution Drafter -> Solution Reviewer,0.75,18597
+Math Specialist -> Counterexample Generator,0.7625,12624.5
+Quality Auditor,0.0,6710.5
+Quality Auditor -> Logic Implementer,0.75,12715.25

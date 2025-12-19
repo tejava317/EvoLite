@@ -1,0 +1,31 @@
+workflow_roles,pass_at_k,tokens
+Regression Sentinel,0.05,6074.0
+Solution Drafter,0.825,7640.0
+Quality Gatekeeper,0.016666666666666666,6439.666666666667
+Dynamic Programming Specialist -> Quality Gatekeeper,0.775,13258.5
+Docstring Author -> Data & Arrays Specialist,0.75,12457.0
+Solution Planner,0.0,7148.5
+Progress Summarizer -> Data & Arrays Specialist,0.8,14047.0
+Docstring Author -> Quality Gatekeeper,0.6833333333333333,12760.333333333334
+Solution Drafter -> Solution Reviewer,0.7625,12819.25
+Task Decomposer -> Solution Planner,0.75,13135.75
+Solution Reviewer -> Quality Gatekeeper,0.7,14216
+Solution Reviewer -> Solution Planner,0.6,13112
+Dynamic Programming Specialist -> Solution Reviewer,0.8,13056
+Data & Arrays Specialist -> Task Decomposer,0.85,12571
+Quality Gatekeeper -> Solution Planner,0.75,13733
+Quality Gatekeeper -> Solution Drafter,0.8,14437
+Solution Drafter -> Solution Planner,0.75,12074
+Docstring Author -> Feedback Integrator -> Progress Summarizer,0.75,17382
+Quality Gatekeeper -> Data & Arrays Specialist,0.8,14543
+Quality Gatekeeper -> Progress Summarizer,0.75,13176
+Data & Arrays Specialist -> Progress Summarizer,0.8,13483.25
+Dynamic Programming Specialist -> Solution Drafter,0.7833333333333333,13366.0
+Quality Gatekeeper -> Solution Reviewer,0.65,12780.75
+Docstring Author -> Quality Gatekeeper,0.625,13243.0
+Docstring Author -> Quality Gatekeeper -> Math Specialist,0.7666666666666667,19584.333333333332
+Dynamic Programming Specialist -> Edge Case Planner,0.725,13619.75
+Docstring Author -> Feedback Integrator -> Quality Gatekeeper,0.775,20025.5
+Problem Analyzer -> Solution Planner -> Algorithm Strategist,0.7,18562.5
+Style & Hygiene Enforcer -> Graph & Combinatorics Specialist -> Solution Ranker -> Math Specialist,0.7375,24960.75
+Solution Planner -> Problem Analyzer -> Logic Implementer,0.7,18437.75

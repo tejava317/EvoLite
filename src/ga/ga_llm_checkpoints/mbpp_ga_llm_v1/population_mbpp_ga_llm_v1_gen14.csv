@@ -1,0 +1,31 @@
+workflow_roles,pass_at_k,tokens
+Feedback Integrator,0.1,6309.25
+Solution Drafter,0.825,6862.5
+Data & Arrays Specialist,0.8125,6437.5
+Progress Summarizer,0.0375,6418.75
+Data & Arrays Specialist,0.8,6851.75
+Data & Arrays Specialist,0.775,6700.0
+Quality Gatekeeper,0.025,6463.0
+Final Presenter -> Data & Arrays Specialist,0.8,11757.5
+Data & Arrays Specialist,0.7875,7097.5
+Logic Implementer -> Data & Arrays Specialist,0.775,12249.5
+Data & Arrays Specialist -> Algorithm Strategist,0.7,11595
+Quality Gatekeeper -> Task Decomposer,0.7,12347
+Interface Designer -> Progress Summarizer,0.65,12091
+Data & Arrays Specialist -> Logic Implementer,0.8,15695
+Final Presenter -> Progress Summarizer,0.65,12537
+Solution Drafter -> Test Designer,0.7,12897
+Math Specialist -> Progress Summarizer,0.75,12248
+Data & Arrays Specialist -> Graph & Combinatorics Specialist,0.75,13574
+Final Presenter -> Consensus Builder -> Data & Arrays Specialist,0.75,17916
+Data & Arrays Specialist -> Quality Auditor,0.85,13350
+Solution Planner,0.0125,6582.0
+Data & Arrays Specialist -> Task Decomposer,0.8,12881.25
+Docstring Author -> Data & Arrays Specialist,0.7625,12205.0
+Solution Drafter -> Progress Summarizer,0.7875,12398.75
+Task Decomposer -> Progress Summarizer,0.7,12052.75
+Solution Drafter -> Solution Planner,0.8,13019.5
+Dynamic Programming Specialist -> Solution Reviewer,0.75,12180.5
+Solution Ranker -> Solution Drafter,0.7666666666666667,12645.666666666666
+Solution Ranker -> Data & Arrays Specialist,0.7625,12636.0
+Quality Gatekeeper -> Robustness Engineer,0.75,13337.0

@@ -1,0 +1,31 @@
+workflow_roles,pass_at_k,tokens
+Example Curator,0.1,6309.25
+Solution Drafter,0.825,6862.5
+Data & Arrays Specialist,0.8125,6437.5
+Progress Summarizer,0.0375,6418.75
+Data & Arrays Specialist,0.8,6851.75
+Data & Arrays Specialist,0.775,6700.0
+Quality Gatekeeper,0.025,6463.0
+Quality Gatekeeper -> Robustness Engineer,0.775,12768.5
+Data & Arrays Specialist,0.7875,7097.5
+Solution Ranker -> Solution Drafter,0.775,12416.5
+Task Decomposer -> Solution Ranker,0.7,12756
+Data & Arrays Specialist -> Strings & Text Specialist,0.7,12629
+Data & Arrays Specialist -> Docstring Author,0.7,13295
+Solution Drafter -> Quality Gatekeeper,0.75,13817
+Solution Planner -> Task Decomposer,0.7,13689
+Solution Drafter -> Solution Ranker,0.75,12162
+Data & Arrays Specialist -> Quality Gatekeeper -> Robustness Engineer,0.7,20005
+Task Decomposer -> Quality Gatekeeper,0.65,12910
+Logic Implementer -> Data & Arrays Specialist,0.8,11599
+Final Presenter -> Data & Arrays Specialist,0.8,11386
+Solution Planner,0.0125,6582.0
+Docstring Author -> Data & Arrays Specialist,0.7625,12205.0
+Solution Drafter -> Progress Summarizer,0.7875,12398.75
+Dynamic Programming Specialist -> Solution Reviewer,0.75,12180.5
+Task Decomposer -> Progress Summarizer,0.7,12052.75
+Data & Arrays Specialist -> Task Decomposer,0.8,12881.25
+Solution Ranker -> Data & Arrays Specialist,0.7625,12636.0
+Solution Drafter -> Solution Planner,0.8,13019.5
+Solution Drafter -> Solution Reviewer,0.7625,12819.25
+Quality Gatekeeper -> Solution Drafter,0.75,12415.0

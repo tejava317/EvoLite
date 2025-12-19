@@ -70,7 +70,7 @@ def create_llm():
     
     else:
         # vLLM mode (default) - uses local vLLM server
-        base_url = os.getenv("VLLM_BASE_URL", "http://38.128.232.68:27717/v1")
+        base_url = os.getenv("VLLM_BASE_URL", "http://103.196.86.181:28668/v1")
         model = os.getenv("VLLM_MODEL", "Qwen/Qwen3-4B")
         
         llm = ChatOpenAI(
@@ -211,4 +211,4 @@ def workflow_to_config(workflow):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8001)
+    uvicorn.run(app, host="0.0.0.0", port=8002)

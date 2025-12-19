@@ -1,0 +1,31 @@
+workflow_roles,pass_at_k,tokens
+Style & Hygiene Enforcer,0.1,6309.25
+Data & Arrays Specialist -> Task Decomposer,0.825,12501.0
+Solution Drafter,0.8166666666666667,7074.0
+Quality Gatekeeper,0.025,6463.0
+Dynamic Programming Specialist -> Solution Reviewer,0.8,12466.5
+Solution Drafter -> Solution Planner,0.8,13148.0
+Solution Drafter -> Solution Reviewer,0.7625,12819.25
+Solution Planner,0.0,6884.333333333333
+Data & Arrays Specialist -> Progress Summarizer,0.8,13483.25
+Docstring Author -> Data & Arrays Specialist,0.75,12133.666666666666
+Strategy Selector -> Quality Gatekeeper,0.7,15110
+Problem Analyzer -> Quality Gatekeeper,0.75,12899
+Example Curator -> Quality Gatekeeper,0.7,14497
+Data & Arrays Specialist -> Solution Drafter,0.85,14197
+Dynamic Programming Specialist -> Task Decomposer,0.75,13235
+Solution Reviewer -> Task Decomposer -> Quality Gatekeeper,0.6,19007
+Dynamic Programming Specialist -> Solution Planner,0.75,12683
+Quality Gatekeeper -> Strategy Selector,0.8,12646
+Quality Gatekeeper -> Solution Drafter -> Solution Reviewer,0.8,17245
+Requirement Extractor -> Quality Gatekeeper,0.7,13312
+Dynamic Programming Specialist -> Solution Drafter,0.7875,13528.75
+Dynamic Programming Specialist -> Quality Gatekeeper,0.7833333333333333,13541.333333333334
+Task Decomposer -> Solution Planner,0.75,13135.75
+Docstring Author -> Quality Gatekeeper,0.65,12918.75
+Progress Summarizer -> Data & Arrays Specialist,0.8,13558.0
+Quality Gatekeeper -> Solution Reviewer,0.65,12780.75
+Dynamic Programming Specialist -> Edge Case Planner,0.725,13619.75
+Docstring Author -> Quality Gatekeeper,0.625,13243.0
+Docstring Author -> Feedback Integrator -> Quality Gatekeeper,0.775,20025.5
+Docstring Author -> Quality Gatekeeper -> Math Specialist,0.775,19520.5

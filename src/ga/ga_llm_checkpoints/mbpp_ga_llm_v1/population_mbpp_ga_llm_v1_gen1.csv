@@ -1,0 +1,21 @@
+workflow_roles,pass_at_k,tokens
+Docstring Author -> Quality Gatekeeper,0.55,12686.0
+Docstring Author -> Feedback Integrator -> Quality Gatekeeper,0.775,20124.5
+Task Decomposer -> Solution Planner,0.775,13332.5
+Dynamic Programming Specialist -> Edge Case Planner,0.725,13286.0
+Solution Drafter -> Solution Reviewer,0.7,12663.5
+Style & Hygiene Enforcer -> Graph & Combinatorics Specialist -> Solution Ranker -> Math Specialist,0.775,26920.0
+Data & Arrays Specialist -> Progress Summarizer,0.8,13828.0
+Problem Analyzer -> Solution Planner -> Algorithm Strategist,0.75,19853.5
+Quality Gatekeeper -> Solution Reviewer,0.725,13532.0
+Solution Planner -> Problem Analyzer -> Logic Implementer,0.7,18415.5
+Dynamic Programming Specialist -> Solution Drafter,0.8,12049
+Quality Gatekeeper -> Docstring Author,0.65,12729
+Algorithm Strategist,0.0,6044
+Docstring Author -> Quality Gatekeeper,0.6,12179
+Quality Gatekeeper -> Docstring Author -> Consistency Checker,0.65,17359
+Style & Hygiene Enforcer -> Graph & Combinatorics Specialist -> Solution Ranker -> Dynamic Programming Specialist,0.75,25261
+Docstring Author -> Quality Gatekeeper -> Math Specialist,0.8,19913
+Quality Gatekeeper,0.0,7060
+Quality Gatekeeper -> Docstring Author -> Consistency Checker,0.75,21510
+Style & Hygiene Enforcer -> Graph & Combinatorics Specialist -> Solution Ranker -> Math Specialist,0.8,25408

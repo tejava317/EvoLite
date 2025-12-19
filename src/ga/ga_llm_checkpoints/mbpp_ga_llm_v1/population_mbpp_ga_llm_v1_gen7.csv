@@ -1,0 +1,31 @@
+workflow_roles,pass_at_k,tokens
+Data Structure Planner,0.1,6309.25
+Data & Arrays Specialist,0.8166666666666667,6681.333333333333
+Solution Drafter,0.825,6862.5
+Quality Gatekeeper,0.025,6463.0
+Solution Planner,0.0125,6582.0
+Solution Drafter -> Progress Summarizer,0.775,12267.0
+Task Decomposer -> Progress Summarizer,0.65,11040.0
+Progress Summarizer -> Task Decomposer,0.6666666666666666,12383.0
+Data & Arrays Specialist -> Task Decomposer,0.8,12881.25
+Solution Ranker -> Data & Arrays Specialist,0.7,11699.0
+Solution Reviewer -> Progress Summarizer,0.7,13304
+Progress Summarizer -> Solution Planner,0.75,12989
+Progress Summarizer -> Task Decomposer -> Strategy Selector -> Approach Evaluator,0.65,25372
+Docstring Author -> Progress Summarizer -> Quality Gatekeeper,0.75,17458
+Solution Planner -> Style & Hygiene Enforcer,0.6,12396
+Progress Summarizer -> Task Decomposer,0.65,12066
+Solution Planner -> Solution Drafter -> Progress Summarizer,0.7,18768
+Progress Summarizer -> Solution Drafter -> Task Decomposer,0.8,20967
+Strategy Selector -> Approach Evaluator,0.6,12784
+Solution Reviewer -> Quality Gatekeeper -> Dynamic Programming Specialist,0.65,18107
+Docstring Author -> Data & Arrays Specialist,0.7625,12205.0
+Dynamic Programming Specialist -> Solution Reviewer,0.75,12180.5
+Solution Drafter -> Solution Reviewer,0.7625,12819.25
+Solution Drafter -> Solution Planner,0.8,13019.5
+Quality Gatekeeper -> Solution Reviewer,0.65,12780.75
+Task Decomposer -> Solution Planner,0.75,13135.75
+Progress Summarizer -> Data & Arrays Specialist,0.8,13138.0
+Data & Arrays Specialist -> Progress Summarizer,0.8,13483.25
+Docstring Author -> Quality Gatekeeper,0.65,12918.75
+Data & Arrays Specialist -> Solution Drafter,0.75,12789.75

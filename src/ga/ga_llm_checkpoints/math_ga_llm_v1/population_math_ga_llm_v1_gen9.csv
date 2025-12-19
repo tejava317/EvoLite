@@ -1,0 +1,23 @@
+workflow_roles,pass_at_k,tokens
+Consensus Builder,0.05,6389.0
+Algorithm Strategist -> Counterexample Generator -> Solution Planner,0.775,18670.5
+Counterexample Generator -> Data & Arrays Specialist,0.7375,11547.75
+Solution Refiner,0.11666666666666667,7552.0
+Progress Summarizer -> Solution Drafter,0.8,12047.0
+Algorithm Strategist,0.075,6540.25
+Counterexample Generator,0.0875,7551.75
+Solution Planner,0.025,6499.25
+Solution Planner -> Solution Refiner,0.7,12474.5
+Algorithm Strategist -> Counterexample Generator,0.625,11961.5
+Progress Summarizer -> Solution Drafter -> Test Designer,0.7,17005
+Progress Summarizer -> Solution Drafter -> Solution Refiner,0.85,18781
+Solution Refiner -> Algorithm Strategist -> Counterexample Generator,0.75,17899
+Consistency Checker -> Progress Summarizer -> Solution Drafter,0.75,18608
+Algorithm Strategist -> Progress Summarizer -> Solution Drafter,0.65,18122
+Proof & Derivation Verifier -> Solution Refiner,0.65,12510
+Constraint Analyzer -> Solution Refiner,0.8,13048
+Approach Evaluator -> Solution Ranker,0.65,13325
+Task Decomposer -> Algorithm Strategist,0.75,12748
+Algorithm Strategist -> Correctness Verifier,0.8,14251
+Counterexample Generator -> Solution Planner,0.725,12465.75
+Regression Sentinel -> Solution Planner,0.75,12730.5

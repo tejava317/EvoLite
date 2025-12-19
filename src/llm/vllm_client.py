@@ -51,11 +51,15 @@ class VLLMClient:
         default_max_tokens: int = 2048,  # Room for prompts within 6000 context
         timeout: float = 600.0,  # 10 minutes for large batches
     ):
-        self.base_url = (base_url or os.getenv("VLLM_BASE_URL", "http://38.128.232.68:27717/v1")).rstrip("/")
+        # self.base_url = (base_url or os.getenv("VLLM_BASE_URL", "http://38.128.232.68:27717/v1")).rstrip("/")
+        self.base_url = (base_url or os.getenv("VLLM_BASE_URL", "http://103.196.86.181:28668/v1")).rstrip("/")
         self.model = model or os.getenv("VLLM_MODEL", "Qwen/Qwen3-4B")
         self.default_temperature = default_temperature
         self.default_max_tokens = default_max_tokens
         self.timeout = timeout
+        
+        # Log the base URL being used
+        print(f"  [VLLMClient] Using base_url: {self.base_url}")
         
         # Load tokenizer for chat template
         print(f"  Loading tokenizer for {self.model}...")
@@ -269,8 +273,14 @@ class VLLMClient:
                 if e.response.status_code < 500 and e.response.status_code != 429:
                     break
                     
+            except httpx.ConnectError as e:
+                # Connection errors (server not running, wrong port, etc.)
+                last_error = f"Connection error: {type(e).__name__}: {str(e)}"
+                # Connection errors are usually permanent, don't retry
+                break
+                    
             except httpx.HTTPError as e:
-                last_error = str(e)
+                last_error = f"{type(e).__name__}: {str(e)}"
             
             # Exponential backoff
             if attempt < max_retries - 1:

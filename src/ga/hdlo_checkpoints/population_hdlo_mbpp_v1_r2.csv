@@ -1,0 +1,12 @@
+workflow_roles,pass_at_k,tokens
+Graph & Combinatorics Specialist -> Performance Optimizer,0.8333333333333334,13305.333333333334
+Correctness Verifier -> Performance Optimizer,0.7,14971.0
+Data Structure Planner -> Performance Optimizer,0.65,15188.0
+Problem Analyzer,0.05,7686.0
+Problem Analyzer -> Performance Optimizer,0.7,13963.0
+Data Structure Planner -> Complexity Estimator,0.65,13260.5
+Problem Analyzer -> Example Curator,0.65,13741.0
+Problem Analyzer -> Interface Designer,0.75,14107.0
+Problem Analyzer -> Summary Author,0.55,14032.0
+Problem Analyzer -> Quality Gatekeeper,0.75,14749.0
+Problem Analyzer -> Performance Optimizer,0.8,13800.0

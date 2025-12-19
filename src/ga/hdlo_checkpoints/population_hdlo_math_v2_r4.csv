@@ -1,0 +1,30 @@
+workflow_roles,pass_at_k,tokens
+Performance Optimizer -> Solution Ranker,0.5333333333333333,10121.333333333334
+Performance Optimizer -> Solution Ranker -> Comment & Hint Writer,0.475,15071.5
+Performance Optimizer -> Solution Ranker -> Requirement Extractor,0.5,15173.0
+Solution Ranker,0.25,6341.0
+Solution Planner -> Performance Optimizer -> Robustness Engineer -> Consistency Checker -> Algorithm Strategist -> Interface Designer -> Boundary Tester,0.55,38508.0
+Consistency Checker,0.2625,5813.25
+Algorithm Strategist -> Complexity Estimator,0.525,10248.5
+Algorithm Strategist -> Data Structure Planner,0.55,10296.75
+Consistency Checker -> Algorithm Strategist -> Data Structure Planner -> Quality Auditor,0.5,20273.0
+Consistency Checker -> Algorithm Strategist -> Data Structure Planner -> Quality Auditor,0.45,21812.0
+Consistency Checker -> Algorithm Strategist -> Data Structure Planner -> Data & Arrays Specialist,0.8166666666666667,24034.333333333332
+Consistency Checker -> Algorithm Strategist -> Data Structure Planner -> Performance Optimizer,0.5333333333333333,19172.0
+Consistency Checker -> Algorithm Strategist -> Data Structure Planner -> Solution Reviewer,0.6,21450.0
+Consistency Checker -> Algorithm Strategist -> Data Structure Planner -> Final Presenter,0.6,21908.0
+Consistency Checker -> Algorithm Strategist -> Data Structure Planner -> Assumption Checker,0.3,21397.0
+Algorithm Strategist -> Data Structure Planner -> Problem Analyzer -> Algorithm Strategist -> Data Structure Planner,0.45,26162.0
+Algorithm Strategist -> Data Structure Planner -> Performance Optimizer -> Test Designer,0.6,19775.5
+Algorithm Strategist -> Data Structure Planner -> Performance Optimizer -> Solution Refiner,0.65,22779.0
+Algorithm Strategist -> Data Structure Planner -> Algorithm Strategist -> Data Structure Planner,0.675,20130.0
+Algorithm Strategist -> Data Structure Planner,0.5,10760.0
+Algorithm Strategist -> Data Structure Planner,0.4,10282.0
+Algorithm Strategist -> Data Structure Planner -> Algorithm Strategist -> Data Structure Planner -> Solution Drafter -> Solution Reviewer,0.7,33212.0
+Algorithm Strategist -> Data Structure Planner -> Performance Optimizer -> Test Designer -> Quality Gatekeeper,0.55,25194.0
+Algorithm Strategist -> Data Structure Planner -> Performance Optimizer -> Test Designer -> Input/State Inspector,0.4,27285.0
+Algorithm Strategist -> Data Structure Planner -> Performance Optimizer -> Test Designer -> Explanation Author,0.25,27568.0
+Algorithm Strategist -> Data Structure Planner -> Performance Optimizer -> Test Designer -> Requirement Extractor,0.45,24333.0
+Algorithm Strategist -> Data Structure Planner -> Performance Optimizer -> Test Designer -> Progress Summarizer,0.55,24510.0
+Algorithm Strategist -> Data Structure Planner -> Performance Optimizer -> Test Designer -> Boundary Tester,0.7,25209.0
+Algorithm Strategist -> Data Structure Planner -> Performance Optimizer -> Test Designer -> Dynamic Programming Specialist,0.6,28692.0

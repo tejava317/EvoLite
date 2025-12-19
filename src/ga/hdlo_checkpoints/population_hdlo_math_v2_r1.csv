@@ -1,0 +1,9 @@
+workflow_roles,pass_at_k,tokens
+Performance Optimizer -> Solution Ranker,0.575,10199.0
+Performance Optimizer -> Solution Ranker -> Comment & Hint Writer,0.65,16022.0
+Performance Optimizer -> Solution Ranker -> Requirement Extractor,0.5,15173.0
+Solution Ranker,0.25,6341.0
+Solution Planner -> Performance Optimizer -> Robustness Engineer -> Consistency Checker -> Algorithm Strategist -> Interface Designer -> Boundary Tester,0.55,38508.0
+Consistency Checker,0.25,5710.0
+Algorithm Strategist -> Complexity Estimator,0.5,9511.0
+Algorithm Strategist -> Data Structure Planner,0.55,9588.0

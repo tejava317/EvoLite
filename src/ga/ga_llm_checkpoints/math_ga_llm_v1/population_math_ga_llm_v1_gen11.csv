@@ -1,0 +1,23 @@
+workflow_roles,pass_at_k,tokens
+Data Structure Planner,0.05,6389.0
+Progress Summarizer -> Solution Drafter -> Solution Refiner,0.8,18439.666666666668
+Counterexample Generator -> Data & Arrays Specialist,0.7375,11547.75
+Solution Refiner,0.1125,7323.25
+Progress Summarizer -> Solution Drafter,0.8,12047.0
+Algorithm Strategist,0.075,6540.25
+Solution Planner,0.025,6499.25
+Counterexample Generator -> Data & Arrays Specialist,0.8,12089.0
+Counterexample Generator,0.0875,7551.75
+Task Decomposer -> Solution Refiner,0.625,12356.5
+Solution Planner -> Solution Refiner,0.5,11850
+Algorithm Strategist -> Solution Planner,0.7,15667
+Progress Summarizer -> Solution Drafter -> Task Decomposer,0.8,20058
+Solution Drafter -> Requirement Extractor -> Task Decomposer -> Solution Planner -> Algorithm Strategist -> Data Structure Planner -> Logic Implementer -> Test Designer -> Correctness Verifier,0.55,55306
+Solution Planner -> Correctness Verifier,0.65,12245
+Solution Refiner -> Regression Sentinel,0.65,12717
+Progress Summarizer -> Solution Refiner,0.75,12790
+Summary Author -> Counterexample Generator -> Data & Arrays Specialist,0.8,18046
+Counterexample Generator -> Data & Arrays Specialist -> Task Decomposer,0.75,16854
+Solution Planner -> Solution Reviewer,0.5,12844
+Algorithm Strategist -> Counterexample Generator,0.625,11961.5
+Constraint Analyzer -> Solution Refiner,0.7666666666666667,12787.333333333334

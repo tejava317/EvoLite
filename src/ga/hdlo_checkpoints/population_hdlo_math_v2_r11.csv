@@ -1,0 +1,79 @@
+workflow_roles,pass_at_k,tokens
+Performance Optimizer -> Solution Ranker,0.5333333333333333,10121.333333333334
+Performance Optimizer -> Solution Ranker -> Comment & Hint Writer,0.475,15071.5
+Performance Optimizer -> Solution Ranker -> Requirement Extractor,0.5,15173.0
+Solution Ranker,0.25,6341.0
+Solution Planner -> Performance Optimizer -> Robustness Engineer -> Consistency Checker -> Algorithm Strategist -> Interface Designer -> Boundary Tester,0.55,38508.0
+Consistency Checker,0.2625,5813.25
+Algorithm Strategist -> Complexity Estimator,0.525,10248.5
+Algorithm Strategist -> Data Structure Planner,0.55,10296.75
+Consistency Checker -> Algorithm Strategist -> Data Structure Planner -> Quality Auditor,0.5,20273.0
+Consistency Checker -> Algorithm Strategist -> Data Structure Planner -> Quality Auditor,0.45,21812.0
+Consistency Checker -> Algorithm Strategist -> Data Structure Planner -> Data & Arrays Specialist,0.775,23818.0
+Consistency Checker -> Algorithm Strategist -> Data Structure Planner -> Performance Optimizer,0.5333333333333333,19172.0
+Consistency Checker -> Algorithm Strategist -> Data Structure Planner -> Solution Reviewer,0.6,21450.0
+Consistency Checker -> Algorithm Strategist -> Data Structure Planner -> Final Presenter,0.6,21908.0
+Consistency Checker -> Algorithm Strategist -> Data Structure Planner -> Assumption Checker,0.3,21397.0
+Algorithm Strategist -> Data Structure Planner -> Problem Analyzer -> Algorithm Strategist -> Data Structure Planner,0.45,26162.0
+Algorithm Strategist -> Data Structure Planner -> Performance Optimizer -> Test Designer,0.5625,20656.0
+Algorithm Strategist -> Data Structure Planner -> Performance Optimizer -> Solution Refiner,0.65,22779.0
+Algorithm Strategist -> Data Structure Planner -> Algorithm Strategist -> Data Structure Planner,0.6125,21058.0
+Algorithm Strategist -> Data Structure Planner,0.5,10760.0
+Algorithm Strategist -> Data Structure Planner,0.4,10282.0
+Algorithm Strategist -> Data Structure Planner -> Algorithm Strategist -> Data Structure Planner -> Solution Drafter -> Solution Reviewer,0.7,33212.0
+Algorithm Strategist -> Data Structure Planner -> Performance Optimizer -> Test Designer -> Quality Gatekeeper,0.55,25194.0
+Algorithm Strategist -> Data Structure Planner -> Performance Optimizer -> Test Designer -> Input/State Inspector,0.4,27285.0
+Algorithm Strategist -> Data Structure Planner -> Performance Optimizer -> Test Designer -> Explanation Author,0.25,27568.0
+Algorithm Strategist -> Data Structure Planner -> Performance Optimizer -> Test Designer -> Requirement Extractor,0.45,24333.0
+Algorithm Strategist -> Data Structure Planner -> Performance Optimizer -> Test Designer -> Progress Summarizer,0.55,24510.0
+Algorithm Strategist -> Data Structure Planner -> Performance Optimizer -> Test Designer -> Boundary Tester,0.7,25209.0
+Algorithm Strategist -> Data Structure Planner -> Performance Optimizer -> Test Designer -> Dynamic Programming Specialist,0.6,28692.0
+Data Structure Planner -> Performance Optimizer -> Correctness Verifier -> Boundary Tester -> Consistency Checker -> Data Structure Planner,0.65,28270.0
+Data Structure Planner -> Performance Optimizer,0.45,11503.0
+Data Structure Planner -> Performance Optimizer,0.4,10665.0
+Data Structure Planner -> Performance Optimizer -> Algorithm Strategist -> Data Structure Planner -> Edge Case Planner,0.55,23548.0
+Data Structure Planner -> Performance Optimizer,0.3,10406.0
+Data Structure Planner -> Performance Optimizer -> Data Structure Planner -> Consistency Checker,0.5,21345.0
+Data Structure Planner -> Performance Optimizer -> Test Designer -> Solution Ranker -> Data Structure Planner -> Solution Refiner,0.6,31946.0
+Algorithm Strategist -> Data Structure Planner -> Data & Arrays Specialist,0.6,18393.0
+Algorithm Strategist -> Data Structure Planner -> Comment & Hint Writer,0.6,16272.0
+Algorithm Strategist -> Data Structure Planner -> Quality Gatekeeper,0.5,15588.0
+Algorithm Strategist -> Data Structure Planner -> Edge Case Planner,0.625,16046.0
+Algorithm Strategist -> Data Structure Planner -> Solution Ranker,0.625,16180.0
+Algorithm Strategist -> Data Structure Planner -> Test Designer,0.575,15025.0
+Algorithm Strategist -> Data Structure Planner -> Solution Reviewer,0.55,14958.0
+Algorithm Strategist -> Test Designer -> Constraint Analyzer -> Edge Case Planner -> Algorithm Strategist -> Data Structure Planner -> Algorithm Strategist -> Data Structure Planner -> Algorithm Strategist,0.65,44081.0
+Algorithm Strategist -> Data Structure Planner -> Test Designer -> Data Structure Planner,0.65,18142.0
+Algorithm Strategist,0.2,5163.75
+Algorithm Strategist -> Performance Optimizer,0.525,11530.5
+Algorithm Strategist -> Data Structure Planner -> Solution Ranker,0.6166666666666667,14656.666666666666
+Algorithm Strategist -> Performance Optimizer,0.55,10604.0
+Algorithm Strategist -> Solution Ranker -> Consistency Checker -> Data Structure Planner,0.7,24163.0
+Algorithm Strategist -> Data Structure Planner -> Consistency Checker -> Strategy Selector,0.6,20865.0
+Algorithm Strategist -> Data Structure Planner -> Consistency Checker -> Logic Implementer,0.7,23463.333333333332
+Algorithm Strategist -> Data Structure Planner -> Consistency Checker -> Bug Hunter,0.55,19490.0
+Algorithm Strategist -> Data Structure Planner -> Consistency Checker -> Problem Analyzer,0.45,21489.0
+Algorithm Strategist -> Data Structure Planner -> Consistency Checker -> Logic Implementer,0.6,25159.0
+Algorithm Strategist -> Data Structure Planner -> Consistency Checker -> Requirement Extractor,0.55,21175.0
+Algorithm Strategist -> Data Structure Planner -> Consistency Checker -> Docstring Author,0.7,20629.0
+Data Structure Planner -> Solution Ranker,0.5,11630.0
+Data Structure Planner -> Algorithm Strategist -> Data Structure Planner,0.55,14919.0
+Data Structure Planner -> Algorithm Strategist -> Data Structure Planner,0.65,16833.0
+Test Designer -> Data Structure Planner -> Solution Ranker,0.55,14548.0
+Data Structure Planner -> Algorithm Strategist,0.6333333333333333,10851.0
+Algorithm Strategist -> Data Structure Planner -> Solution Ranker -> Data Structure Planner,0.55,20218.0
+Data Structure Planner -> Solution Ranker -> Test Designer,0.5,16625.0
+Data Structure Planner -> Algorithm Strategist -> Consistency Checker -> Style & Hygiene Enforcer,0.6,21819.0
+Data Structure Planner -> Algorithm Strategist -> Consistency Checker -> Assumption Checker,0.55,17538.0
+Data Structure Planner -> Algorithm Strategist -> Consistency Checker -> Graph & Combinatorics Specialist,0.7,21730.5
+Data Structure Planner -> Algorithm Strategist -> Consistency Checker -> Comment & Hint Writer,0.575,18747.5
+Data Structure Planner -> Algorithm Strategist -> Consistency Checker -> Solution Planner,0.65,20531.0
+Data Structure Planner -> Algorithm Strategist -> Consistency Checker -> Comment & Hint Writer,0.5,19202.0
+Data Structure Planner -> Algorithm Strategist -> Consistency Checker -> Quality Auditor,0.4,21300.0
+Algorithm Strategist -> Data Structure Planner -> Solution Refiner -> Consistency Checker,0.6,22321.0
+Data Structure Planner,0.2,5373.0
+Consistency Checker -> Algorithm Strategist -> Data Structure Planner -> Interface Designer,0.65,20268.0
+Data Structure Planner -> Performance Optimizer,0.6,10221.0
+Consistency Checker -> Algorithm Strategist -> Data Structure Planner -> Strategy Selector,0.4,21282.0
+Algorithm Strategist -> Edge Case Planner,0.55,11449.0
+Consistency Checker -> Algorithm Strategist -> Data Structure Planner -> Style & Hygiene Enforcer,0.6,22444.0

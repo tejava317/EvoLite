@@ -1,0 +1,23 @@
+workflow_roles,pass_at_k,tokens
+Dynamic Programming Specialist,0.05,6389.0
+Progress Summarizer -> Solution Drafter,0.8,12047.0
+Solution Refiner,0.1125,7323.25
+Counterexample Generator -> Data & Arrays Specialist,0.7375,11547.75
+Algorithm Strategist,0.075,6540.25
+Solution Planner,0.025,6499.25
+Counterexample Generator -> Data & Arrays Specialist,0.75,12405.666666666666
+Counterexample Generator,0.0875,7551.75
+Solution Planner -> Solution Refiner,0.575,13112.5
+Algorithm Strategist -> Counterexample Generator,0.625,11961.5
+Solution Planner -> Docstring Author -> Solution Refiner,0.8,19336
+Algorithm Strategist -> Performance Optimizer,0.6,12849
+Example Curator -> Solution Refiner,0.55,13080
+Progress Summarizer -> Algorithm Strategist,0.75,11760
+Solution Refiner,0.15,8156
+Proof & Derivation Verifier -> Solution Planner -> Solution Refiner,0.65,19746
+Algorithm Strategist -> Counterexample Generator -> Constraint Analyzer,0.7,16839
+Strategy Selector -> Approach Evaluator -> Solution Refiner -> Correctness Verifier,0.75,25192
+Problem Analyzer -> Requirement Extractor,0.55,13296
+Solution Planner -> Dynamic Programming Specialist,0.8,11863
+Progress Summarizer -> Solution Drafter -> Solution Refiner,0.775,18111.25
+Task Decomposer -> Solution Refiner,0.6666666666666666,12194.0

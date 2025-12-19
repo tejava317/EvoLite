@@ -1,0 +1,102 @@
+workflow_roles,pass_at_k,tokens
+Graph & Combinatorics Specialist -> Performance Optimizer,0.8125,13208.5
+Correctness Verifier -> Performance Optimizer,0.7,14971.0
+Data Structure Planner -> Performance Optimizer,0.65,15188.0
+Problem Analyzer,0.03333333333333333,7491.666666666667
+Problem Analyzer -> Performance Optimizer,0.7,13963.0
+Data Structure Planner -> Complexity Estimator,0.6833333333333333,13456.666666666666
+Problem Analyzer -> Example Curator,0.65,13741.0
+Problem Analyzer -> Interface Designer,0.75,14107.0
+Problem Analyzer -> Summary Author,0.55,14032.0
+Problem Analyzer -> Quality Gatekeeper,0.75,14749.0
+Problem Analyzer -> Performance Optimizer,0.8,13800.0
+Data Structure Planner,0.0875,6973.5
+Problem Analyzer -> Task Decomposer,0.55,13716.0
+Problem Analyzer -> Solution Planner,0.7,14251.0
+Problem Analyzer -> Solution Planner,0.65,13083.5
+Solution Planner,0.025,6894.0
+Performance Optimizer -> Final Presenter,0.75,13836.0
+Performance Optimizer -> Solution Planner,0.75,14619.5
+Performance Optimizer -> Strategy Selector,0.8,14142.0
+Performance Optimizer -> Explanation Author,0.7,14287.0
+Performance Optimizer -> Boundary Tester,0.8,15804.0
+Problem Analyzer -> Data Structure Planner,0.7,13482.0
+Problem Analyzer -> Data Structure Planner,0.8,13833.0
+Problem Analyzer -> Data Structure Planner,0.8,14319.0
+Solution Planner -> Algorithm Strategist,0.75,13560.0
+Problem Analyzer -> Data Structure Planner,0.7,13399.0
+Data Structure Planner -> Performance Optimizer,0.75,14339.0
+Data Structure Planner -> Output Specifier,0.5,13490.0
+Data Structure Planner -> Edge Case Planner,0.5,13911.0
+Data Structure Planner -> Final Presenter,0.6,13319.0
+Data Structure Planner -> Boundary Tester,0.75,13255.0
+Performance Optimizer,0.1,7055.0
+Performance Optimizer,0.1875,7508.75
+Performance Optimizer,0.1375,7237.75
+Problem Analyzer -> Performance Optimizer,0.7,14044.0
+Performance Optimizer -> Requirement Extractor,0.7,13724.0
+Performance Optimizer -> Problem Analyzer,0.5,14028.0
+Performance Optimizer -> Comment & Hint Writer,0.6,15221.0
+Performance Optimizer -> Requirement Extractor,0.6,14286.0
+Performance Optimizer -> Regression Sentinel,0.7833333333333333,13708.333333333334
+Performance Optimizer -> Regression Sentinel,0.75,13660.0
+Problem Analyzer -> Performance Optimizer,0.65,13216.0
+Problem Analyzer -> Performance Optimizer,0.65,13527.666666666666
+Data Structure Planner -> Performance Optimizer,0.8,14281.0
+Algorithm Strategist -> Complexity Estimator,0.6,13376.0
+Problem Analyzer -> Performance Optimizer,0.65,13537.0
+Performance Optimizer -> Progress Summarizer,0.75,13487.0
+Performance Optimizer -> Logic Implementer,0.8,13960.0
+Performance Optimizer -> Solution Reviewer,0.6,13447.0
+Performance Optimizer -> Solution Ranker,0.65,13768.0
+Performance Optimizer -> Stepwise Reasoner,0.825,14783.75
+Problem Analyzer -> Performance Optimizer,0.55,14137.0
+Problem Analyzer -> Performance Optimizer,0.6,13750.0
+Algorithm Strategist -> Complexity Estimator,0.65,13431.0
+Problem Analyzer -> Performance Optimizer,0.8,15147.0
+Correctness Verifier -> Performance Optimizer,0.7,16108.0
+Performance Optimizer -> Feedback Integrator,0.75,14653.0
+Performance Optimizer -> Constraint Analyzer,0.7,14795.0
+Performance Optimizer -> Comment & Hint Writer,0.8,14788.0
+Performance Optimizer -> Problem Analyzer,0.75,13892.0
+Performance Optimizer -> Conflict Resolver,0.8,15915.0
+Performance Optimizer,0.06666666666666667,7073.0
+Performance Optimizer,0.0,7196.0
+Performance Optimizer,0.1,7292.0
+Performance Optimizer,0.0,6837.0
+Performance Optimizer,0.0625,6876.25
+Performance Optimizer -> Style & Hygiene Enforcer,0.75,13839.0
+Performance Optimizer -> Data & Arrays Specialist,0.75,13133.0
+Performance Optimizer -> Math Specialist,0.8166666666666667,14387.0
+Performance Optimizer -> Quality Auditor,0.75,13188.0
+Performance Optimizer -> Consensus Builder,0.6666666666666666,13363.666666666666
+Consensus Builder,0.0,6794.0
+Performance Optimizer -> Consensus Builder -> Data Structure Planner,0.75,18331.0
+Consensus Builder -> Performance Optimizer,0.65,14317.0
+Consensus Builder,0.05,7228.0
+Consensus Builder,0.05,7559.0
+Performance Optimizer -> Approach Evaluator,0.55,13906.0
+Performance Optimizer -> Test Designer,0.65,14132.0
+Performance Optimizer -> Solution Reviewer,0.8,13981.0
+Performance Optimizer -> Graph & Combinatorics Specialist,0.8625,13897.0
+Performance Optimizer -> Edge Case Planner,0.65,14293.0
+Solution Drafter -> Solution Reviewer -> Solution Refiner -> Test Designer -> Problem Analyzer -> Requirement Extractor -> Constraint Analyzer -> Output Specifier -> Solution Planner -> Algorithm Strategist -> Data Structure Planner -> Complexity Estimator -> Edge Case Planner -> Interface Designer -> Logic Implementer -> Robustness Engineer -> Performance Optimizer -> Bug Hunter -> Correctness Verifier -> Boundary Tester -> Regression Sentinel -> Quality Auditor -> Docstring Author -> Example Curator -> Explanation Author -> Summary Author -> Stepwise Reasoner -> Assumption Checker -> Consistency Checker -> Counterexample Generator -> Feedback Integrator -> Conflict Resolver -> Consensus Builder -> Quality Gatekeeper -> Progress Summarizer,0.65,234279.0
+Problem Analyzer -> Performance Optimizer,0.675,13622.5
+Problem Analyzer -> Solution Reviewer -> Performance Optimizer,0.8,19627.0
+Problem Analyzer -> Performance Optimizer,0.8,13324.0
+Performance Optimizer -> Style & Hygiene Enforcer,0.8,13694.0
+Performance Optimizer -> Problem Analyzer,0.7,14460.0
+Performance Optimizer -> Edge Case Planner,0.7,13665.0
+Performance Optimizer -> Requirement Extractor,0.5,13285.0
+Performance Optimizer -> Comment & Hint Writer,0.65,13208.5
+Performance Optimizer -> Robustness Engineer,0.8,14772.0
+Performance Optimizer -> Stepwise Reasoner,0.75,14132.5
+Performance Optimizer -> Data & Arrays Specialist,0.8,13570.0
+Performance Optimizer -> Quality Auditor,0.75,14423.0
+Performance Optimizer -> Solution Planner,0.6,13438.0
+Edge Case Planner,0.05,8840.0
+Performance Optimizer -> Quality Auditor,0.75,13049.0
+Performance Optimizer -> Regression Sentinel,0.8,13365.0
+Performance Optimizer -> Complexity Estimator,0.75,14880.0
+Performance Optimizer -> Graph & Combinatorics Specialist,0.85,13672.0
+Performance Optimizer -> Robustness Engineer,0.7,13186.0

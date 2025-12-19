@@ -1,0 +1,21 @@
+workflow_roles,pass_at_k,tokens
+Problem Analyzer -> Solution Planner -> Algorithm Strategist,0.65,20474
+Solution Planner -> Problem Analyzer -> Logic Implementer,0.7,17830
+Problem Analyzer -> Solution Planner -> Algorithm Strategist,0.75,19505
+Task Decomposer -> Solution Planner,0.75,12785
+Problem Analyzer -> Solution Planner -> Logic Implementer,0.7,18435
+Quality Gatekeeper -> Solution Reviewer,0.7,13780
+Strings & Text Specialist -> Constraint Analyzer,0.65,15261
+Solution Drafter -> Solution Reviewer,0.65,13098
+Docstring Author -> Quality Gatekeeper,0.45,10718
+Data & Arrays Specialist -> Progress Summarizer,0.75,13305
+Solution Planner -> Algorithm Strategist -> Data Structure Planner -> Logic Implementer,0.65,25167
+Robustness Engineer -> Stepwise Reasoner -> Answer Extractor -> Proof & Derivation Verifier,0.7,22590
+Style & Hygiene Enforcer -> Graph & Combinatorics Specialist -> Solution Ranker -> Math Specialist,0.8,25072
+Task Decomposer -> Solution Drafter -> Algorithm Strategist -> Solution Planner,0.65,24454
+Constraint Analyzer -> Algorithm Strategist -> Math Specialist -> Style & Hygiene Enforcer,0.65,22329
+Docstring Author -> Feedback Integrator -> Quality Gatekeeper,0.8,20425
+Dynamic Programming Specialist -> Edge Case Planner,0.65,12690
+Input/State Inspector -> Final Presenter,0.65,15524
+Interface Designer -> Problem Analyzer -> Approach Evaluator,0.7,18701
+Strategy Selector -> Output Specifier -> Constraint Analyzer,0.7,18617

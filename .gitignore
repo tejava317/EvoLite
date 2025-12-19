@@ -1,17 +1,63 @@
-# .env file
+# Environment
 .env
+.env.local
 
-# Python cache
+# Python
 __pycache__/
 *.py[cod]
 *$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
 
-# file
-graph
-checkpoints
+# Virtual environments
+.venv/
+venv/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Jupyter Notebook
+.ipynb_checkpoints/
+
+# Evolution results (regenerated during runs)
+src/ga/result/
+src/ga/checkpoints/
+
+# Manual evaluation results
+src/ga/manual_eval/
+
+# Logs
+logs/
+*.log
 nohup.out
 
-# result file
-src/ga/result
-src/ga/checkpoints
-logs/
+# Temporary files
+*.tmp
+*.temp
+graph/
+checkpoints/

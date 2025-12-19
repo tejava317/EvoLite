@@ -1,0 +1,5 @@
+workflow_roles,pass_at_k,tokens
+Progress Summarizer -> Solution Drafter,0.7722222222222223,45643.666666666664
+Counterexample Generator -> Data & Arrays Specialist,0.7611111111111111,44266.77777777778
+Solution Refiner,0.15,24497.666666666668
+Algorithm Strategist,0.12222222222222222,22657.88888888889

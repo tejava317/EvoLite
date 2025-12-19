@@ -1,0 +1,22 @@
+workflow_roles,pass_at_k,tokens
+Solution Reviewer,0.05,6389.0
+Solution Planner -> Data & Arrays Specialist -> Dynamic Programming Specialist,0.775,19024.0
+Counterexample Generator -> Data & Arrays Specialist,0.7375,11547.75
+Solution Refiner,0.2,7843.333333333333
+Progress Summarizer -> Solution Drafter,0.8,12047.0
+Solution Refiner,0.1125,7323.25
+Algorithm Strategist,0.075,6540.25
+Solution Planner -> Dynamic Programming Specialist,0.7666666666666667,13134.333333333334
+Solution Planner,0.025,6499.25
+Counterexample Generator,0.0875,7551.75
+Test Designer -> Solution Planner -> Data & Arrays Specialist -> Dynamic Programming Specialist,0.7,25464
+Task Decomposer -> Progress Summarizer -> Solution Drafter,0.75,18018
+Requirement Extractor -> Constraint Analyzer,0.5,12571
+Docstring Author -> Progress Summarizer -> Solution Drafter,0.8,19843
+Solution Planner -> Data & Arrays Specialist -> Dynamic Programming Specialist,0.75,18769
+Solution Planner -> Docstring Author,0.7,13043
+Solution Planner -> Data & Arrays Specialist,0.8,13103
+Strategy Selector -> Solution Planner -> Progress Summarizer,0.75,19092
+Data & Arrays Specialist -> Data Structure Planner,0.75,13707
+Solution Planner -> Solution Refiner,0.65,13693
+Progress Summarizer -> Algorithm Strategist,0.7,12291.333333333334

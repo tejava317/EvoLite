@@ -1,0 +1,31 @@
+workflow_roles,pass_at_k,tokens
+Edge Case Planner,0.1,6309.25
+Solution Drafter,0.825,6862.5
+Data & Arrays Specialist,0.8125,6437.5
+Quality Gatekeeper,0.025,6463.0
+Data & Arrays Specialist,0.7833333333333333,6849.0
+Progress Summarizer,0.03333333333333333,6448.666666666667
+Data & Arrays Specialist,0.725,6936.0
+Data & Arrays Specialist -> Task Decomposer,0.8,12881.25
+Solution Planner,0.0125,6582.0
+Data & Arrays Specialist,0.7875,7097.5
+Solution Planner -> Data & Arrays Specialist,0.8,13050
+Solution Ranker -> Docstring Author,0.6,11872
+Data & Arrays Specialist -> Docstring Author -> Progress Summarizer,0.7,20150
+Solution Drafter -> Summary Author,0.8,13176
+Solution Refiner -> Solution Reviewer,0.55,12755
+Data & Arrays Specialist -> Solution Drafter,0.7,13864
+Algorithm Strategist -> Data & Arrays Specialist,0.75,12094
+Problem Analyzer -> Task Decomposer,0.55,14627
+Problem Analyzer -> Data & Arrays Specialist,0.7,13313
+Progress Summarizer -> Quality Gatekeeper,0.7,13412
+Solution Drafter -> Progress Summarizer,0.7875,12398.75
+Docstring Author -> Data & Arrays Specialist,0.7625,12205.0
+Solution Drafter -> Solution Planner,0.8,13019.5
+Quality Gatekeeper -> Solution Drafter,0.75,12415.0
+Dynamic Programming Specialist -> Solution Reviewer,0.75,12180.5
+Solution Ranker -> Data & Arrays Specialist,0.7625,12636.0
+Task Decomposer -> Progress Summarizer,0.7,12052.75
+Solution Drafter -> Solution Reviewer,0.7625,12819.25
+Progress Summarizer -> Task Decomposer,0.6625,12484.75
+Performance Optimizer -> Quality Gatekeeper,0.7166666666666667,12755.666666666666
